@@ -1,0 +1,6 @@
+rootProject.name = 'wiki-backend'
+
+include 'wiki-common'
+include 'wiki-gateway'
+include 'wiki-auth'
+include 'wiki-organization'

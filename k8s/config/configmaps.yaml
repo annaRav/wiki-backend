@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-keycloak-config
+  namespace: wiki
+data:
+  POSTGRES_DB: keycloak
+  POSTGRES_USER: keycloak
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-app-config
+  namespace: wiki
+data:
+  POSTGRES_DB: wiki_organization
+  POSTGRES_USER: wiki_user
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: keycloak-config
+  namespace: wiki
+data:
+  KC_DB: postgres
+  KC_DB_URL_HOST: postgres-keycloak
+  KC_DB_URL_PORT: "5432"
+  KC_DB_URL_DATABASE: keycloak
+  KC_DB_USERNAME: keycloak
+  KC_DB_SCHEMA: public
+  KC_HOSTNAME_STRICT: "false"
+  KC_HOSTNAME_STRICT_HTTPS: "false"
+  KC_HTTP_ENABLED: "true"
+  KC_HEALTH_ENABLED: "true"
+  KC_METRICS_ENABLED: "true"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mongodb-config
+  namespace: wiki
+data:
+  MONGO_INITDB_DATABASE: wiki
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rabbitmq-config
+  namespace: wiki
+data:
+  RABBITMQ_DEFAULT_USER: wiki
+  RABBITMQ_DEFAULT_VHOST: wiki
