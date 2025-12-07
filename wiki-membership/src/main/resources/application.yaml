@@ -3,10 +3,10 @@ server:
 
 spring:
   application:
-    name: wiki-organization
+    name: wiki-membership
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres-app}:${DB_PORT:5432}/${DB_NAME:wiki_organization}
+    url: jdbc:postgresql://${DB_HOST:postgres-app}:${DB_PORT:5432}/${DB_NAME:wiki_membership}
     username: ${DB_USERNAME:wiki_user}
     password: ${DB_PASSWORD:wiki_password}
     driver-class-name: org.postgresql.Driver

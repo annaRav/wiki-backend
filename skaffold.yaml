@@ -15,10 +15,10 @@ build:
     jib:
       project: wiki-auth
       type: gradle
-  - image: wiki/organization
-    context: wiki-organization
+  - image: wiki/membership
+    context: wiki-membership
     jib:
-      project: wiki-organization
+      project: wiki-membership
       type: gradle
   local:
     push: false
@@ -38,7 +38,7 @@ deploy:
     - k8s/infrastructure/redis.yaml
     - k8s/services/wiki-gateway.yaml
     - k8s/services/wiki-auth.yaml
-    - k8s/services/wiki-organization.yaml
+    - k8s/services/wiki-membership.yaml
 
 portForward:
 - resourceType: service
@@ -77,10 +77,10 @@ profiles:
         type: gradle
         args:
         - --no-daemon
-    - image: wiki/organization
-      context: wiki-organization
+    - image: wiki/membership
+      context: wiki-membership
       jib:
-        project: wiki-organization
+        project: wiki-membership
         type: gradle
         args:
         - --no-daemon

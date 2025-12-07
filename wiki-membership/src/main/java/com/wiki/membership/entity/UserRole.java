@@ -1,4 +1,4 @@
-package com.wiki.organization.entity;
+package com.wiki.membership.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

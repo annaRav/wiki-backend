@@ -1,4 +1,4 @@
-package com.wiki.organization.entity;
+package com.wiki.membership.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -6,7 +6,9 @@ import lombok.*;
 import java.util.UUID;
 
 @Entity
-@Table(name = "permissions")
+@Table(name = "permissions", uniqueConstraints = {
+    @UniqueConstraint(name = "uk_permission_name", columnNames = {"name"})
+})
 @Getter
 @Setter
 @NoArgsConstructor

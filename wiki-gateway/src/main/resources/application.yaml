@@ -15,10 +15,10 @@ spring:
           filters:
             - StripPrefix=0
 
-        - id: organization-service
-          uri: http://wiki-organization:8082
+        - id: membership-service
+          uri: http://wiki-membership:8082
           predicates:
-            - Path=/api/organizations/**
+            - Path=/api/organizations/**,/api/memberships/**
           filters:
             - StripPrefix=0
 

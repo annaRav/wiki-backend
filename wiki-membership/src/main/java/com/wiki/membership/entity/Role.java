@@ -1,4 +1,4 @@
-package com.wiki.organization.entity;
+package com.wiki.membership.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
@@ -11,7 +11,8 @@ import java.util.UUID;
 @Entity
 @Table(name = "roles",
     uniqueConstraints = {
-        @UniqueConstraint(name = "uk_organization_role_name", columnNames = {"organization_id", "name"})
+        @UniqueConstraint(name = "uk_organization_role_name", columnNames = {"organization_id", "name"}),
+        @UniqueConstraint(name = "uk_organization_role_code", columnNames = {"organization_id", "code"})
     },
     indexes = {
         @Index(name = "idx_role_organization", columnList = "organization_id")
@@ -33,6 +34,9 @@ public class Role {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(nullable = false)
+    private String code;
 
     @Column(columnDefinition = "TEXT")
     private String description;
