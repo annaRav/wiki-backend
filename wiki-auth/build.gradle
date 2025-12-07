@@ -1,4 +1,5 @@
 plugins {
+    id 'java'
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
     id 'com.google.cloud.tools.jib'
@@ -11,14 +12,18 @@ dependencyManagement {
 }
 
 dependencies {
-    implementation project(':wiki-common')
+    implementation(project(':wiki-common')) {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-security'
+    }
 
     // Spring Boot WebFlux
     implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
-    // Security OAuth2 Client
+    // Security OAuth2 Client (reactive)
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-client'
-    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.security:spring-security-oauth2-resource-server'
+    implementation 'org.springframework.security:spring-security-oauth2-jose'
 
     // Actuator
     implementation 'org.springframework.boot:spring-boot-starter-actuator'

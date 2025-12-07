@@ -13,7 +13,7 @@ metadata:
   name: postgres-app-config
   namespace: wiki
 data:
-  POSTGRES_DB: wiki_organization
+  POSTGRES_DB: wiki_membership
   POSTGRES_USER: wiki_user
 ---
 apiVersion: v1

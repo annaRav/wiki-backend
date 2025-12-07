@@ -1,25 +1,25 @@
-apiVersion: skaffold/v4beta6
+apiVersion: skaffold/v2beta2
 kind: Config
 metadata:
   name: wiki-backend
 
 build:
   artifacts:
-  - image: wiki/gateway
-    context: wiki-gateway
-    jib:
-      project: wiki-gateway
-      type: gradle
-  - image: wiki/auth
-    context: wiki-auth
-    jib:
-      project: wiki-auth
-      type: gradle
-  - image: wiki/membership
-    context: wiki-membership
-    jib:
-      project: wiki-membership
-      type: gradle
+    - image: wiki/gateway
+      context: .
+      jib:
+        project: wiki-gateway
+        type: gradle
+    - image: wiki/auth
+      context: .
+      jib:
+        project: wiki-auth
+        type: gradle
+    - image: wiki/membership
+      context: .
+      jib:
+        project: wiki-membership
+        type: gradle
   local:
     push: false
     useBuildkit: true
@@ -27,60 +27,57 @@ build:
 deploy:
   kubectl:
     manifests:
-    - k8s/namespace.yaml
-    - k8s/config/configmaps.yaml
-    - k8s/config/secrets.yaml
-    - k8s/infrastructure/postgres-keycloak.yaml
-    - k8s/infrastructure/postgres-app.yaml
-    - k8s/infrastructure/keycloak.yaml
-    - k8s/infrastructure/mongodb.yaml
-    - k8s/infrastructure/rabbitmq.yaml
-    - k8s/infrastructure/redis.yaml
-    - k8s/services/wiki-gateway.yaml
-    - k8s/services/wiki-auth.yaml
-    - k8s/services/wiki-membership.yaml
+      - k8s/namespace.yaml
+      - k8s/config/configmaps.yaml
+      - k8s/config/secrets.yaml
+      - k8s/infrastructure/postgres-keycloak.yaml
+      - k8s/infrastructure/postgres-app.yaml
+      - k8s/infrastructure/keycloak.yaml
+      - k8s/infrastructure/mongodb.yaml
+      - k8s/infrastructure/rabbitmq.yaml
+      - k8s/infrastructure/redis.yaml
+      - k8s/services/wiki-gateway.yaml
+      - k8s/services/wiki-auth.yaml
+      - k8s/services/wiki-membership.yaml
 
 portForward:
-- resourceType: service
-  resourceName: wiki-gateway
-  namespace: wiki
-  port: 8080
-  localPort: 8080
-- resourceType: service
-  resourceName: keycloak
-  namespace: wiki
-  port: 8080
-  localPort: 8180
-- resourceType: service
-  resourceName: rabbitmq
-  namespace: wiki
-  port: 15672
-  localPort: 15672
+  - resourceType: service
+    resourceName: wiki-gateway
+    namespace: wiki
+    port: 8080
+    localPort: 8080
+  - resourceType: service
+    resourceName: keycloak
+    namespace: wiki
+    port: 8080
+    localPort: 8180
+  - resourceType: service
+    resourceName: rabbitmq
+    namespace: wiki
+    port: 15672
+    localPort: 15672
 
 profiles:
-- name: dev
-  activation:
-  - command: dev
-  build:
-    artifacts:
-    - image: wiki/gateway
-      context: wiki-gateway
-      jib:
-        project: wiki-gateway
-        type: gradle
-        args:
-        - --no-daemon
-    - image: wiki/auth
-      context: wiki-auth
-      jib:
-        project: wiki-auth
-        type: gradle
-        args:
-        - --no-daemon
-    - image: wiki/membership
-      context: wiki-membership
-      jib:
-        project: wiki-membership
-        type: gradle
-        args:
-        - --no-daemon
+  - name: dev
+    activation:
+      - command: dev
+    build:
+      artifacts:
+        - image: wiki/gateway
+          context: .
+          jib:
+            project: wiki-gateway
+            type: gradle
+            args: ["--no-daemon"]
+        - image: wiki/auth
+          context: .
+          jib:
+            project: wiki-auth
+            type: gradle
+            args: ["--no-daemon"]
+        - image: wiki/membership
+          context: .
+          jib:
+            project: wiki-membership
+            type: gradle
+            args: ["--no-daemon"]
