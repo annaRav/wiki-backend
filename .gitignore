@@ -37,3 +37,6 @@ logs/
 
 # Kubernetes secrets (local overrides)
 k8s/config/secrets-local.yaml
+
+# MCP configuration (contains API keys)
+.mcp.json

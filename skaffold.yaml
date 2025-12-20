@@ -10,11 +10,6 @@ build:
       jib:
         project: wiki-gateway
         type: gradle
-    - image: wiki/auth
-      context: .
-      jib:
-        project: wiki-auth
-        type: gradle
     - image: wiki/membership
       context: .
       jib:
@@ -36,8 +31,8 @@ deploy:
       - k8s/infrastructure/mongodb.yaml
       - k8s/infrastructure/rabbitmq.yaml
       - k8s/infrastructure/redis.yaml
+      - k8s/infrastructure/keycloak-realm-config.yaml
       - k8s/services/wiki-gateway.yaml
-      - k8s/services/wiki-auth.yaml
       - k8s/services/wiki-membership.yaml
 
 portForward:
@@ -67,12 +62,6 @@ profiles:
           context: .
           jib:
             project: wiki-gateway
-            type: gradle
-            args: ["--no-daemon"]
-        - image: wiki/auth
-          context: .
-          jib:
-            project: wiki-auth
             type: gradle
             args: ["--no-daemon"]
         - image: wiki/membership
