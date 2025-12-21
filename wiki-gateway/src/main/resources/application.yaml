@@ -17,6 +17,12 @@ spring:
             - Path=/api/organizations/**,/api/memberships/**,/api/users/**
           filters:
             - StripPrefix=0
+        - id: media-service
+          uri: http://wiki-media:8083
+          predicates:
+            - Path=/api/media/**
+          filters:
+            - StripPrefix=0
 
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Credentials Access-Control-Allow-Origin

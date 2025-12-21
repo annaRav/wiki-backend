@@ -15,6 +15,11 @@ build:
       jib:
         project: wiki-membership
         type: gradle
+    - image: wiki/media
+      context: .
+      jib:
+        project: wiki-media
+        type: gradle
   local:
     push: false
     useBuildkit: true
@@ -34,6 +39,7 @@ deploy:
       - k8s/infrastructure/keycloak-realm-config.yaml
       - k8s/services/wiki-gateway.yaml
       - k8s/services/wiki-membership.yaml
+      - k8s/services/wiki-media.yaml
 
 portForward:
   - resourceType: service
@@ -68,5 +74,11 @@ profiles:
           context: .
           jib:
             project: wiki-membership
+            type: gradle
+            args: ["--no-daemon"]
+        - image: wiki/media
+          context: .
+          jib:
+            project: wiki-media
             type: gradle
             args: ["--no-daemon"]
