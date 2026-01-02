@@ -4,25 +4,38 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Wiki Backend is a microservices-based wiki platform built with Spring Boot 3.4, Spring Cloud, and Keycloak authentication. The system runs on Kubernetes (Minikube) and uses Skaffold for local development.
+Axis Backend is a microservices-based life goals planning platform (similar to Trello) built with Spring Boot 3.4, Spring Cloud, and Keycloak authentication. The system helps users organize and track long-term, medium-term, and short-term life goals using a board-based interface. The platform runs on Kubernetes (Minikube) and uses Skaffold for local development.
 
 ### Microservices
 
-- **wiki-gateway** (Port 8080): Spring Cloud Gateway, WebFlux-based reactive API gateway with OAuth2 JWT resource server
-- **wiki-membership** (Port 8082): Organization and membership management service with PostgreSQL
-- **wiki-common**: Shared library containing security utilities, exception handling, and DTOs
+- **axis-gateway** (Port 8080): Spring Cloud Gateway, WebFlux-based reactive API gateway with OAuth2 JWT resource server
+- **axis-media** (Port 8083): Media file management service with MongoDB storage
+- **axis-common**: Shared library containing security utilities, exception handling, and DTOs
 
 ### Technology Stack
 
 - Java 21 (use modern features: records, pattern matching, sealed classes)
 - Spring Boot 3.4.1
 - Spring Cloud 2024.0.0
-- Keycloak 24.0 (realm: `wiki`, client: `wiki-backend`)
-- PostgreSQL (separate instances for Keycloak and application data)
+- Keycloak 24.0 (realm: `axis`, client: `axis-backend`)
+- PostgreSQL (separate instances for Keycloak and future application data)
 - MongoDB 7
 - RabbitMQ 3
 - Redis 7
 - Kubernetes (Minikube) with Skaffold
+
+## Domain Model
+
+### Goals System (Future Implementation)
+- **Long-term Goals**: Strategic objectives (1-5+ years)
+- **Medium-term Goals**: Quarterly/yearly milestones (3-12 months)
+- **Short-term Goals**: Daily/weekly tasks (days to weeks)
+
+### Board System (Future Implementation)
+- Trello-like boards for organizing goals
+- Customizable columns/lists
+- Card-based goal representation
+- Progress tracking
 
 ## Build and Development Commands
 
@@ -33,7 +46,7 @@ Wiki Backend is a microservices-based wiki platform built with Spring Boot 3.4, 
 ./gradlew clean build
 
 # Build specific service
-./gradlew :wiki-membership:build
+./gradlew :axis-media:build
 
 # Build Docker images (uses Jib)
 ./gradlew jibDockerBuild
@@ -62,19 +75,19 @@ skaffold delete
 
 ```bash
 # Check pod status
-kubectl get pods -n wiki
+kubectl get pods -n axis
 
 # View logs
-kubectl logs -f <pod-name> -n wiki
+kubectl logs -f <pod-name> -n axis
 
 # Describe resource
-kubectl describe pod <pod-name> -n wiki
+kubectl describe pod <pod-name> -n axis
 
 # Restart deployment
-kubectl rollout restart deployment/wiki-membership -n wiki
+kubectl rollout restart deployment/axis-media -n axis
 
 # Port forward to service
-kubectl port-forward -n wiki service/wiki-gateway 8080:8080
+kubectl port-forward -n axis service/axis-gateway 8080:8080
 ```
 
 ## Architecture Patterns
@@ -99,7 +112,7 @@ The platform uses Keycloak for OAuth2/OIDC authentication:
 
 - **Gateway**: Uses WebFlux reactive security with JWT resource server
 - **Services**: Standard Spring Security with JWT resource server
-- **Custom JWT converter**: `JwtAuthenticationConverter` in wiki-common extracts realm roles and converts to Spring Security authorities
+- **Custom JWT converter**: `JwtAuthenticationConverter` in axis-common extracts realm roles and converts to Spring Security authorities
 - **Security utilities**: `SecurityUtils` class provides helper methods to extract user ID, email, username, and roles from JWT
 
 Access current user information:
@@ -111,7 +124,7 @@ boolean isAdmin = SecurityUtils.hasRole("admin");
 
 ### Exception Handling
 
-Global exception handling is provided in wiki-common:
+Global exception handling is provided in axis-common:
 - `GlobalExceptionHandler` with `@RestControllerAdvice` handles all exceptions
 - `ResourceNotFoundException`: Returns 404 with standard `ApiError` response
 - `BusinessException`: Returns configurable HTTP status with error details
@@ -126,14 +139,14 @@ Flyway is used for database migrations:
 - JPA configuration: `ddl-auto: validate` to prevent schema auto-generation
 - Run migrations: Automatic on application startup
 
-### Shared Library (wiki-common)
+### Shared Library (axis-common)
 
 Contains:
 - **Security**: `JwtAuthenticationConverter`, `SecurityUtils`
 - **Exceptions**: `GlobalExceptionHandler`, `ResourceNotFoundException`, `BusinessException`
 - **DTOs**: `ApiError` for standardized error responses
 
-All services depend on wiki-common and inherit these capabilities.
+All services depend on axis-common and inherit these capabilities.
 
 ## Service Configuration Patterns
 
@@ -141,7 +154,7 @@ All services depend on wiki-common and inherit these capabilities.
 
 ```yaml
 server:
-  port: 8082
+  port: 8083
 
 spring:
   application:
@@ -176,13 +189,13 @@ management:
 
 Services expect these environment variables (provided via ConfigMaps/Secrets):
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
-- `KEYCLOAK_JWK_SET_URI`: Defaults to `http://keycloak:8080/realms/wiki/protocol/openid-connect/certs`
+- `KEYCLOAK_JWK_SET_URI`: Defaults to `http://keycloak:8080/realms/axis/protocol/openid-connect/certs`
 
 ## Kubernetes Deployment
 
 ### Namespace
 
-All resources deployed to `wiki` namespace.
+All resources deployed to `axis` namespace.
 
 ### Services and Ports
 
@@ -192,8 +205,8 @@ All resources deployed to `wiki` namespace.
 
 ### Keycloak Configuration
 
-Realm `wiki` is auto-imported with:
-- Client: `wiki-backend` (secret: `secret`)
+Realm `axis` is auto-imported with:
+- Client: `axis-backend` (secret: `secret`)
 - Roles: `user`, `admin`
 - Test users:
   - `admin` / `admin` (roles: admin, user)
@@ -202,8 +215,8 @@ Realm `wiki` is auto-imported with:
 ### Infrastructure Dependencies
 
 - `postgres-keycloak`: Keycloak's database
-- `postgres-app`: Application database (wiki_membership)
-- `mongodb`: Document storage
+- `postgres-app`: Application database (for future use)
+- `mongodb`: Document storage (media files)
 - `rabbitmq`: Message broker
 - `redis`: Caching
 
@@ -212,8 +225,8 @@ Realm `wiki` is auto-imported with:
 Gateway routes requests based on path patterns:
 
 ```yaml
-- Path=/api/organizations/**,/api/memberships/**,/api/users/**
-  -> http://wiki-membership:8082
+- Path=/api/media/**
+  -> http://axis-media:8083
 ```
 
 All routes require valid JWT authentication except `/actuator/**`.
@@ -237,6 +250,7 @@ All routes require valid JWT authentication except `/actuator/**`.
 4. **Entity Exposure**: Never return entities from controllers, always use DTOs
 5. **JPA ddl-auto**: Always use `validate`, never `update` or `create-drop`
 6. **Keycloak URL**: Use internal service name `http://keycloak:8080` not `localhost:8180` in configs
+7. **Namespace**: Always use `axis` namespace, not `wiki` or `default`
 
 ## Maintaining This Documentation
 
@@ -262,4 +276,8 @@ While CLAUDE.md is the primary file, keep these files synchronized as the projec
 | **CHANGELOG.md** | After completing features, fixes, or releases | Track all notable changes following Keep a Changelog format |
 | **.claudeignore** | New build dirs, generated code, large binary directories | Excludes files from Claude's context for better performance |
 | **README.md** | Major project changes, setup instructions | General project documentation (Claude reads this too) |
-| **.mcp.json** | New MCP servers for databases/tools | External tool integrations (e.g., postgres-app, postgres-keycloak) |
+| **.mcp.json** | New MCP servers for databases/tools | External tool integrations (e.g., postgres-app) |
+
+## Migration History
+
+This project was migrated from wiki-backend to axis-backend on 2026-01-02. The platform's focus shifted from a wiki system to a life goals planning platform. See [MIGRATION_TO_AXIS.md](MIGRATION_TO_AXIS.md) for complete migration details.

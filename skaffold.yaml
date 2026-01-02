@@ -1,29 +1,19 @@
 apiVersion: skaffold/v2beta2
 kind: Config
 metadata:
-  name: wiki-backend
+  name: axis-backend
 
 build:
   artifacts:
-    - image: wiki/gateway
+    - image: axis/gateway
       context: .
       jib:
-        project: wiki-gateway
+        project: axis-gateway
         type: gradle
-    - image: wiki/membership
+    - image: axis/media
       context: .
       jib:
-        project: wiki-membership
-        type: gradle
-    - image: wiki/media
-      context: .
-      jib:
-        project: wiki-media
-        type: gradle
-    - image: wiki/message
-      context: .
-      jib:
-        project: wiki-message
+        project: axis-media
         type: gradle
   local:
     push: false
@@ -42,52 +32,45 @@ deploy:
       - k8s/infrastructure/rabbitmq.yaml
       - k8s/infrastructure/redis.yaml
       - k8s/infrastructure/keycloak-realm-config.yaml
-      - k8s/services/wiki-gateway.yaml
-      - k8s/services/wiki-membership.yaml
-      - k8s/services/wiki-media.yaml
-      - k8s/services/wiki-message.yaml
+      - k8s/services/axis-gateway.yaml
+      - k8s/services/axis-media.yaml
 
 portForward:
   - resourceType: service
-    resourceName: wiki-gateway
-    namespace: wiki
+    resourceName: axis-gateway
+    namespace: axis
     port: 8080
     localPort: 8080
   - resourceType: service
     resourceName: keycloak
-    namespace: wiki
+    namespace: axis
     port: 8080
     localPort: 8180
   - resourceType: service
     resourceName: rabbitmq
-    namespace: wiki
+    namespace: axis
     port: 15672
     localPort: 15672
   - resourceType: service
     resourceName: postgres-app
-    namespace: wiki
+    namespace: axis
     port: 5432
     localPort: 5433
   - resourceType: service
     resourceName: postgres-keycloak
-    namespace: wiki
+    namespace: axis
     port: 5432
     localPort: 5434
   - resourceType: service
     resourceName: mongodb
-    namespace: wiki
+    namespace: axis
     port: 27017
     localPort: 27017
   - resourceType: service
     resourceName: redis
-    namespace: wiki
+    namespace: axis
     port: 6379
     localPort: 6379
-  - resourceType: service
-    resourceName: wiki-message
-    namespace: wiki
-    port: 8084
-    localPort: 8084
 
 profiles:
   - name: dev
@@ -95,27 +78,15 @@ profiles:
       - command: dev
     build:
       artifacts:
-        - image: wiki/gateway
+        - image: axis/gateway
           context: .
           jib:
-            project: wiki-gateway
+            project: axis-gateway
             type: gradle
             args: ["--no-daemon"]
-        - image: wiki/membership
+        - image: axis/media
           context: .
           jib:
-            project: wiki-membership
-            type: gradle
-            args: ["--no-daemon"]
-        - image: wiki/media
-          context: .
-          jib:
-            project: wiki-media
-            type: gradle
-            args: ["--no-daemon"]
-        - image: wiki/message
-          context: .
-          jib:
-            project: wiki-message
+            project: axis-media
             type: gradle
             args: ["--no-daemon"]

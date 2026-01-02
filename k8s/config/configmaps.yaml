@@ -2,7 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-keycloak-config
-  namespace: wiki
+  namespace: axis
 data:
   POSTGRES_DB: keycloak
   POSTGRES_USER: keycloak
@@ -11,16 +11,16 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postgres-app-config
-  namespace: wiki
+  namespace: axis
 data:
-  POSTGRES_DB: wiki_membership
-  POSTGRES_USER: wiki_user
+  POSTGRES_DB: axis_goal
+  POSTGRES_USER: axis_user
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: keycloak-config
-  namespace: wiki
+  namespace: axis
 data:
   KC_DB: postgres
   KC_DB_URL_HOST: postgres-keycloak
@@ -38,28 +38,28 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: mongodb-config
-  namespace: wiki
+  namespace: axis
 data:
-  MONGO_INITDB_DATABASE: wiki
+  MONGO_INITDB_DATABASE: axis
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: rabbitmq-config
-  namespace: wiki
+  namespace: axis
 data:
-  RABBITMQ_DEFAULT_USER: wiki
-  RABBITMQ_DEFAULT_VHOST: wiki
+  RABBITMQ_DEFAULT_USER: axis
+  RABBITMQ_DEFAULT_VHOST: axis
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: keycloak-realm-import
-  namespace: wiki
+  namespace: axis
 data:
-  wiki-realm.json: |
+  axis-realm.json: |
     {
-      "realm": "wiki",
+      "realm": "axis",
       "enabled": true,
       "sslRequired": "none",
       "registrationAllowed": true,
@@ -80,14 +80,14 @@ data:
       "offlineSessionMaxLifespan": 5184000,
       "clients": [
         {
-          "clientId": "wiki-backend",
+          "clientId": "axis-backend",
           "enabled": true,
           "protocol": "openid-connect",
           "publicClient": false,
           "secret": "secret",
           "redirectUris": [
             "http://localhost:8080/*",
-            "http://wiki-gateway:8080/*"
+            "http://axis-gateway:8080/*"
           ],
           "webOrigins": [
             "http://localhost:8080"
@@ -114,7 +114,7 @@ data:
           ]
         },
         {
-          "clientId": "wiki-frontend",
+          "clientId": "axis-frontend",
           "enabled": true,
           "protocol": "openid-connect",
           "publicClient": true,
@@ -166,7 +166,7 @@ data:
         {
           "username": "admin",
           "enabled": true,
-          "email": "admin@wiki.local",
+          "email": "admin@axis.local",
           "firstName": "Admin",
           "lastName": "User",
           "credentials": [
@@ -181,7 +181,7 @@ data:
         {
           "username": "user",
           "enabled": true,
-          "email": "user@wiki.local",
+          "email": "user@axis.local",
           "firstName": "Test",
           "lastName": "User",
           "credentials": [

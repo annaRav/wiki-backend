@@ -1,7 +1,5 @@
-rootProject.name = 'wiki-backend'
+rootProject.name = 'axis-backend'
 
-include 'wiki-common'
-include 'wiki-gateway'
-include 'wiki-membership'
-include 'wiki-media'
-include 'wiki-message'
+include 'axis-common'
+include 'axis-gateway'
+include 'axis-media'

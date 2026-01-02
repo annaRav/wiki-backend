@@ -6,7 +6,7 @@ plugins {
 }
 
 allprojects {
-    group = 'com.wiki'
+    group = 'com.axis'
     version = '1.0.0-SNAPSHOT'
 
     repositories {

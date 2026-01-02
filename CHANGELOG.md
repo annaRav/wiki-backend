@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to the Wiki Backend project will be documented in this file.
+All notable changes to the Axis Backend project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
@@ -8,11 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- Created `.claudeignore` for performance optimization
-- Added maintenance documentation section to CLAUDE.md
+- Migration documentation (MIGRATION_TO_AXIS.md)
+- Life goals planning domain model documentation
+- Board system architecture documentation
 
 ### Changed
-- Updated CLAUDE.md with instructions for maintaining project documentation
+- **BREAKING**: Complete project restructuring from wiki-backend to axis-backend
+- **BREAKING**: Renamed all modules: wiki-* → axis-*
+- **BREAKING**: Renamed Java packages: com.wiki.* → com.axis.*
+- **BREAKING**: Renamed Kubernetes namespace: wiki → axis
+- **BREAKING**: Renamed Keycloak realm: wiki → axis
+- **BREAKING**: Renamed Docker images: wiki/* → axis/*
+- Project focus: Wiki platform → Life goals planning platform (Trello-like)
+- Updated all configuration files for axis naming
+- Updated all Kubernetes manifests
+- Updated Skaffold configuration
+- Updated documentation (README.md, CLAUDE.md, IMPLEMENTATION_PLAN.md)
+
+### Removed
+- **BREAKING**: wiki-membership microservice (removed completely)
+- **BREAKING**: wiki-message microservice (removed completely)
+- All database schemas for removed services
 
 ## [0.2.0] - 2024-12-21
 
@@ -79,8 +95,8 @@ When making changes to the project, add entries under `[Unreleased]` section:
 ## [Unreleased]
 
 ### Added
-- New article management endpoints in wiki-content service
-- Support for markdown rendering
+- New goal management endpoints in axis-goals service
+- Support for long-term, medium-term, and short-term goals
 
 ### Fixed
 - JWT token expiration handling in gateway
@@ -101,6 +117,6 @@ When ready to release a new version:
 - **MINOR** (0.X.0) - New features, backward-compatible
 - **PATCH** (0.0.X) - Bug fixes, backward-compatible
 
-[Unreleased]: https://github.com/yourusername/wiki-backend/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/yourusername/wiki-backend/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/yourusername/wiki-backend/releases/tag/v0.1.0
+[Unreleased]: https://github.com/yourusername/axis-backend/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/yourusername/axis-backend/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/yourusername/axis-backend/releases/tag/v0.1.0

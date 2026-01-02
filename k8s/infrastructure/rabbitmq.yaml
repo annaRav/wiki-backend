@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: rabbitmq
-  namespace: wiki
+  namespace: axis
   labels:
     app: rabbitmq
 spec:
@@ -66,7 +66,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rabbitmq
-  namespace: wiki
+  namespace: axis
   labels:
     app: rabbitmq
 spec:

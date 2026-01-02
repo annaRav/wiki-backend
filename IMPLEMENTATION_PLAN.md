@@ -1,14 +1,14 @@
-# Wiki Backend - Implementation Plan
+# Axis Backend - Implementation Plan
 
-**Project**: Wiki Backend Microservices
-**Created**: 2025-12-06
+**Project**: Axis Life Goals Planner
+**Created**: 2026-01-02
 **Status**: Planning Phase
 
 ---
 
 ## Project Overview
 
-A microservices-based wiki platform with organization management, role-based access control, and Keycloak authentication.
+A microservices-based life goals planning platform with board-based organization (similar to Trello), focused on helping users manage long-term, medium-term, and short-term life goals.
 
 ### Technology Stack
 - **Backend**: Java 21, Spring Boot 3.4.1, Spring Cloud 2024.0.0
@@ -20,282 +20,201 @@ A microservices-based wiki platform with organization management, role-based acc
 
 ---
 
-## Phase 1: Infrastructure Setup ✅ COMPLETED
+## Migration Status ✅
 
-**Goal**: Set up the project structure and infrastructure foundation.
+**Completed**: Migration from wiki-backend to axis-backend (2026-01-02)
+- Renamed all modules and packages
+- Updated all configurations
+- Removed obsolete services (wiki-membership, wiki-message)
+- Updated documentation
 
-### Tasks Completed
-- [x] Create multi-module Gradle project structure
-- [x] Set up wiki-common shared library
-- [x] Create wiki-gateway (Spring Cloud Gateway)
-- [x] Create wiki-auth (OAuth2 BFF)
-- [x] Create wiki-organization (JPA service)
-- [x] Define Kubernetes manifests for all infrastructure
-- [x] Configure Skaffold for local development
-- [x] Create Flyway database migration (V1)
-
-### Deliverables
-- Project structure with 3 microservices + 1 common library
-- Kubernetes manifests for PostgreSQL, Keycloak, MongoDB, RabbitMQ, Redis
-- Working Skaffold configuration
-- Database schema for organizations, roles, permissions
+See [MIGRATION_TO_AXIS.md](MIGRATION_TO_AXIS.md) for complete migration details.
 
 ---
 
-## Phase 2: Authentication & Authorization 🔄 NEXT
+## Phase 1: Core Goals Service 📋 NEXT
 
-**Goal**: Implement complete authentication flow and JWT-based authorization.
+**Goal**: Implement the foundation for goal management.
 
-**Duration**: 1-2 weeks
+### 1.1 Goals Domain Model
+- [ ] Design Goal entity (UUID, title, description, type, status, dates)
+- [ ] Define GoalType enum (LONG_TERM, MEDIUM_TERM, SHORT_TERM)
+- [ ] Define GoalStatus enum (NOT_STARTED, IN_PROGRESS, COMPLETED, ARCHIVED)
+- [ ] Create Repository interfaces
+- [ ] Set up database migrations (Flyway or Liquibase)
 
-### 2.1 Keycloak Setup
-- [ ] Create `wiki` realm in Keycloak
-- [ ] Configure `wiki-backend` client
-- [ ] Set up realm roles (admin, user, editor, viewer)
-- [ ] Configure client scopes and mappers
-- [ ] Test token generation and validation
+### 1.2 Goals Service Implementation
+- [ ] Create axis-goals microservice module
+- [ ] Implement GoalService with CRUD operations
+- [ ] Add validation and business logic
+- [ ] Create DTOs and MapStruct mappers
 
-### 2.2 Auth Service Implementation
-- [ ] Implement login endpoint (OAuth2 authorization code flow)
-- [ ] Implement logout endpoint
-- [ ] Implement token refresh endpoint
-- [ ] Get current user profile endpoint
-- [ ] User registration endpoint (Keycloak Admin API)
-- [ ] Write integration tests
+### 1.3 Goals REST API
+- [ ] `POST /api/goals` - Create goal
+- [ ] `GET /api/goals` - List user's goals (with filters)
+- [ ] `GET /api/goals/{id}` - Get goal details
+- [ ] `PUT /api/goals/{id}` - Update goal
+- [ ] `DELETE /api/goals/{id}` - Delete/archive goal
+- [ ] Add pagination, sorting, and filtering
 
-### 2.3 Gateway Security Enhancement
-- [ ] Fine-tune route security rules
-- [ ] Add request logging filter
-- [ ] Implement circuit breaker for downstream services
-- [ ] Add health check aggregation
-
-### 2.4 Common Security Enhancements
-- [ ] Enhance SecurityUtils with more helper methods
-- [ ] Add custom security annotations (@RequireRole, @RequirePermission)
-- [ ] Create security audit logging aspect
-
-### Deliverables
-- Fully functional authentication flow
-- JWT token validation in all services
-- User registration capability
-- Comprehensive security tests
-
----
-
-## Phase 3: Organization Management Core 📋 UPCOMING
-
-**Goal**: Implement CRUD operations for organizations and basic role management.
-
-**Duration**: 2-3 weeks
-
-### 3.1 Organization Service - Domain Layer
-- [ ] Create Repository interfaces (Organization, Role, Permission)
-- [ ] Create Service layer (OrganizationService, RoleService)
-- [ ] Implement DTO classes with validation
-- [ ] Create MapStruct mappers
-
-### 3.2 Organization REST API
-- [ ] `POST /api/organizations` - Create organization
-- [ ] `GET /api/organizations` - List user's organizations
-- [ ] `GET /api/organizations/{slug}` - Get organization details
-- [ ] `PUT /api/organizations/{slug}` - Update organization
-- [ ] `DELETE /api/organizations/{slug}` - Delete organization (soft delete)
-- [ ] Add pagination and search
-
-### 3.3 Role Management API
-- [ ] `GET /api/organizations/{slug}/roles` - List roles
-- [ ] `POST /api/organizations/{slug}/roles` - Create role
-- [ ] `PUT /api/organizations/{slug}/roles/{roleId}` - Update role
-- [ ] `DELETE /api/organizations/{slug}/roles/{roleId}` - Delete role
-- [ ] `GET /api/organizations/{slug}/roles/{roleId}/permissions` - Get role permissions
-- [ ] `PUT /api/organizations/{slug}/roles/{roleId}/permissions` - Update role permissions
-
-### 3.4 Testing
+### 1.4 Testing
 - [ ] Unit tests for services
 - [ ] Integration tests with TestContainers
 - [ ] API contract tests
 
 ### Deliverables
-- Complete organization CRUD API
-- Role and permission management
-- Comprehensive test coverage
-- API documentation (Swagger/OpenAPI)
+- Goals microservice with complete CRUD
+- Database schema for goals
+- REST API with documentation
+- Test coverage > 80%
 
 ---
 
-## Phase 4: Member Management 👥 UPCOMING
+## Phase 2: Board & Workspace Management 🗂️ UPCOMING
 
-**Goal**: Implement organization membership and user-role assignments.
+**Goal**: Implement Trello-like board system for organizing goals.
 
-**Duration**: 1-2 weeks
+### 2.1 Board Domain Model
+- [ ] Design Board entity
+- [ ] Design Column/List entity
+- [ ] Design Card entity (links to Goals)
+- [ ] Establish relationships
 
-### 4.1 Member Management API
-- [ ] `GET /api/organizations/{slug}/members` - List members
-- [ ] `POST /api/organizations/{slug}/members` - Add member
-- [ ] `DELETE /api/organizations/{slug}/members/{userId}` - Remove member
-- [ ] `GET /api/organizations/{slug}/members/{userId}/roles` - Get user roles
-- [ ] `PUT /api/organizations/{slug}/members/{userId}/roles` - Assign roles
-- [ ] Member invitation system
+### 2.2 Board Service
+- [ ] Board CRUD operations
+- [ ] Column management
+- [ ] Card positioning and ordering
+- [ ] Drag-and-drop logic
 
-### 4.2 Authorization Layer
-- [ ] Implement permission checker service
-- [ ] Create @RequirePermission annotation
-- [ ] Add method-level security
-- [ ] Create permission evaluation logic
-
-### 4.3 User Context Enhancement
-- [ ] Get current user's organizations
-- [ ] Get current user's permissions in organization
-- [ ] Cache user permissions in Redis
+### 2.3 Board API
+- [ ] Board management endpoints
+- [ ] Column management endpoints
+- [ ] Card management endpoints
+- [ ] Reordering operations
 
 ### Deliverables
-- Member management API
-- Fine-grained authorization system
-- Permission caching
-- Invitation workflow
+- Board microservice
+- Complete board management API
+- Drag-and-drop support
 
 ---
 
-## Phase 5: Wiki Content Foundation 📝 UPCOMING
+## Phase 3: Progress Tracking & Analytics 📊 UPCOMING
 
-**Goal**: Create the foundation for wiki content management.
+**Goal**: Add progress tracking and visualization.
 
-**Duration**: 2-3 weeks
+### 3.1 Progress System
+- [ ] Milestone tracking
+- [ ] Sub-goals/tasks
+- [ ] Progress calculation
+- [ ] Completion metrics
 
-### 5.1 New Service: wiki-content
-- [ ] Create wiki-content microservice
-- [ ] Use MongoDB for content storage
-- [ ] Set up content schema (Page, Section, Revision)
-- [ ] Implement version control
-
-### 5.2 Content API
-- [ ] `POST /api/organizations/{slug}/pages` - Create page
-- [ ] `GET /api/organizations/{slug}/pages` - List pages
-- [ ] `GET /api/organizations/{slug}/pages/{pageId}` - Get page
-- [ ] `PUT /api/organizations/{slug}/pages/{pageId}` - Update page
-- [ ] `DELETE /api/organizations/{slug}/pages/{pageId}` - Delete page
-- [ ] `GET /api/organizations/{slug}/pages/{pageId}/history` - Page history
-
-### 5.3 Content Features
-- [ ] Markdown support
-- [ ] Rich text editor integration
-- [ ] Image upload and management
-- [ ] Search functionality (Elasticsearch?)
+### 3.2 Analytics Service
+- [ ] Goals statistics
+- [ ] Progress over time
+- [ ] Achievement tracking
+- [ ] Reports generation
 
 ### Deliverables
-- Content management service
-- Version control for pages
-- Basic search functionality
-- Image handling
+- Progress tracking system
+- Analytics dashboard data
+- Reports API
 
 ---
 
-## Phase 6: Real-time Collaboration 🔄 UPCOMING
+## Phase 4: Collaboration Features 👥 UPCOMING
 
-**Goal**: Add real-time features using WebSocket and RabbitMQ.
+**Goal**: Enable sharing and collaboration on goals.
 
-**Duration**: 2-3 weeks
+### 4.1 Sharing & Permissions
+- [ ] Goal sharing mechanism
+- [ ] Permission levels (view, edit, admin)
+- [ ] Collaborative boards
 
-### 6.1 Real-time Infrastructure
-- [ ] Set up WebSocket support in gateway
-- [ ] Configure RabbitMQ exchanges and queues
-- [ ] Implement event publishing from services
-
-### 6.2 Real-time Features
-- [ ] Live page editing indicators
-- [ ] Notification system
-- [ ] Activity feed
-- [ ] User presence tracking
-
-### 6.3 Event-Driven Architecture
-- [ ] OrganizationCreatedEvent
-- [ ] MemberAddedEvent
-- [ ] PageUpdatedEvent
-- [ ] RoleChangedEvent
+### 4.2 Activity Feed
+- [ ] Activity tracking
+- [ ] Notifications system
+- [ ] Real-time updates (WebSocket)
 
 ### Deliverables
-- WebSocket support
-- Event-driven communication
+- Sharing and permissions system
+- Activity feed
 - Real-time notifications
-- Activity tracking
 
 ---
 
-## Phase 7: Advanced Features 🚀 FUTURE
+## Phase 5: Advanced Features 🚀 FUTURE
 
-**Goal**: Add advanced features and optimizations.
+### 5.1 Templates
+- [ ] Goal templates
+- [ ] Board templates
+- [ ] Pre-built workflows
 
-**Duration**: 3-4 weeks
+### 5.2 Reminders & Scheduling
+- [ ] Deadline reminders
+- [ ] Recurring goals
+- [ ] Calendar integration
 
-### 7.1 Advanced Search
-- [ ] Full-text search with Elasticsearch
-- [ ] Search across organizations
-- [ ] Advanced filtering
-- [ ] Search suggestions
-
-### 7.2 Analytics & Monitoring
-- [ ] Prometheus metrics
-- [ ] Grafana dashboards
-- [ ] Distributed tracing (Zipkin/Jaeger)
-- [ ] Error tracking (Sentry?)
-
-### 7.3 Performance Optimization
-- [ ] Redis caching strategy
-- [ ] Database query optimization
-- [ ] API response compression
-- [ ] CDN for static assets
-
-### 7.4 Additional Features
-- [ ] File attachments
-- [ ] Comments on pages
-- [ ] Page templates
-- [ ] Export functionality (PDF, Markdown)
+### 5.3 Attachments & Media
+- [ ] File attachments using axis-media
+- [ ] Image uploads
+- [ ] Document linking
 
 ### Deliverables
-- Advanced search capability
-- Comprehensive monitoring
-- Optimized performance
-- Rich feature set
+- Template system
+- Reminder service
+- Enhanced media support
 
 ---
 
-## Phase 8: Production Readiness 🎯 FUTURE
+## Phase 6: Mobile & Frontend 📱 FUTURE
 
-**Goal**: Prepare the system for production deployment.
+### 6.1 Mobile API Optimization
+- [ ] GraphQL API (optional)
+- [ ] API versioning
+- [ ] Performance optimization
 
-**Duration**: 2-3 weeks
+### 6.2 Frontend Development
+- [ ] Web application (React/Vue/Angular)
+- [ ] Mobile apps (React Native/Flutter)
+- [ ] Progressive Web App (PWA)
 
-### 8.1 Security Hardening
+### Deliverables
+- Optimized APIs
+- Web application
+- Mobile applications
+
+---
+
+## Phase 7: Production Readiness 🎯 FUTURE
+
+### 7.1 Performance & Scalability
+- [ ] Caching strategy (Redis)
+- [ ] Database optimization
+- [ ] Load testing
+- [ ] Horizontal scaling
+
+### 7.2 Security Hardening
 - [ ] Security audit
 - [ ] Penetration testing
-- [ ] OWASP compliance check
-- [ ] Secrets management (Vault?)
+- [ ] OWASP compliance
 
-### 8.2 DevOps & CI/CD
+### 7.3 Monitoring & Observability
+- [ ] Prometheus metrics
+- [ ] Grafana dashboards
+- [ ] Distributed tracing
+- [ ] Error tracking
+
+### 7.4 CI/CD & Deployment
 - [ ] GitHub Actions workflows
 - [ ] Automated testing
-- [ ] Docker image optimization
-- [ ] Production Kubernetes manifests
+- [ ] Production Kubernetes setup
 - [ ] Helm charts
 
-### 8.3 Documentation
-- [ ] API documentation (OpenAPI/Swagger)
-- [ ] Deployment guide
-- [ ] User manual
-- [ ] Architecture decision records (ADRs)
-
-### 8.4 Production Infrastructure
-- [ ] Production-ready database setup
-- [ ] Backup and recovery procedures
-- [ ] Load balancer configuration
-- [ ] SSL/TLS certificates
-- [ ] Domain and DNS setup
-
 ### Deliverables
-- Production-ready application
-- Complete documentation
-- CI/CD pipeline
-- Monitoring and alerting
+- Production-ready infrastructure
+- Complete monitoring setup
+- Automated CI/CD pipeline
 
 ---
 
@@ -312,50 +231,32 @@ A microservices-based wiki platform with organization management, role-based acc
 
 ## Success Metrics
 
-### Phase 2-3 (MVP)
-- Authentication success rate > 99%
+### Phase 1-2 (MVP)
 - API response time < 200ms (p95)
 - Test coverage > 80%
+- Support CRUD for goals and boards
 
-### Phase 4-5 (Beta)
-- Support 10+ concurrent users per organization
+### Phase 3-4 (Beta)
+- Support 100+ concurrent users
+- Real-time updates < 1s latency
+- 99.5% uptime
+
+### Phase 5-7 (Production)
+- Support 1000+ concurrent users
+- API response time < 100ms (p95)
 - 99.9% uptime
-- Sub-second search results
-
-### Phase 6-8 (Production)
-- Support 100+ organizations
-- 1000+ concurrent users
-- 99.99% uptime
-- Response time < 100ms (p95)
-
----
-
-## Risk Management
-
-### Technical Risks
-- **Risk**: Keycloak configuration complexity
-  **Mitigation**: Start with simple setup, document extensively
-
-- **Risk**: Microservices complexity
-  **Mitigation**: Keep services focused, use common patterns
-
-- **Risk**: Performance issues with MongoDB
-  **Mitigation**: Proper indexing, caching strategy
-
-### Resource Risks
-- **Risk**: Development time estimation
-  **Mitigation**: Break down into smaller tasks, regular reviews
+- Mobile apps in stores
 
 ---
 
 ## Notes
 
 - This is a living document - update as project evolves
-- Each phase should have its own detailed task breakdown
+- Each phase should have detailed task breakdown
 - Regular retrospectives after each phase
-- Adjust timelines based on progress and feedback
+- Prioritize based on user feedback
 
 ---
 
-**Last Updated**: 2025-12-06
-**Next Review**: Start of Phase 2
+**Last Updated**: 2026-01-02
+**Next Review**: Start of Phase 1 implementation
