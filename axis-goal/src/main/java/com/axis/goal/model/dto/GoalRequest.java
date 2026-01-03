@@ -1,13 +1,15 @@
 package com.axis.goal.model.dto;
 
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.Goal.GoalType;
+import com.axis.goal.model.entity.GoalType;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Schema(description = "Request DTO for creating or updating a goal")
 public record GoalRequest(
@@ -29,14 +31,9 @@ public record GoalRequest(
     @NotNull(message = "Goal status is required")
     GoalStatus status,
 
-    @Schema(description = "Start date of the goal", example = "2025-01-01")
-    LocalDate startDate,
-
-    @Schema(description = "Deadline for completing the goal", example = "2025-12-31")
-    LocalDate deadline,
-
-    @Schema(description = "Date when the goal was completed", example = "2025-11-15")
-    LocalDate completionDate
+    @Schema(description = "List of custom field answers for this goal")
+    @Valid
+    List<CustomFieldAnswerRequest> customAnswers
 
 ) {
 }

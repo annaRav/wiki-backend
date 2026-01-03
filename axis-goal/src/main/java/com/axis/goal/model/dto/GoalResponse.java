@@ -1,7 +1,7 @@
 package com.axis.goal.model.dto;
 
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.Goal.GoalType;
+import com.axis.goal.model.entity.GoalType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -25,15 +25,6 @@ public record GoalResponse(
 
     @Schema(description = "Current status of the goal", example = "IN_PROGRESS")
     GoalStatus status,
-
-    @Schema(description = "Start date of the goal", example = "2025-01-01")
-    LocalDate startDate,
-
-    @Schema(description = "Deadline for completing the goal", example = "2025-12-31")
-    LocalDate deadline,
-
-    @Schema(description = "Date when the goal was completed", example = "2025-11-15")
-    LocalDate completionDate,
 
     @Schema(description = "ID of the user who owns this goal")
     UUID userId,

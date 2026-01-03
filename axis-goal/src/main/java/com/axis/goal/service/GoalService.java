@@ -3,7 +3,7 @@ package com.axis.goal.service;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.Goal.GoalType;
+import com.axis.goal.model.entity.GoalType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 

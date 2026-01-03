@@ -6,9 +6,9 @@ spring:
     name: axis-goal
 
   datasource:
-    url: jdbc:postgresql://${DB_HOST:postgres-app}:${DB_PORT:5432}/${DB_NAME:axis_app}
-    username: ${DB_USERNAME:axis}
-    password: ${DB_PASSWORD:axis123}
+    url: jdbc:postgresql://${DB_HOST:postgres-app}:${DB_PORT:5432}/${DB_NAME:axis_goal}
+    username: ${DB_USERNAME:axis_user}
+    password: ${DB_PASSWORD:axis_password}
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10

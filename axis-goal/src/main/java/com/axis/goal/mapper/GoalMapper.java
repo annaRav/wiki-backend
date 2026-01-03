@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring")
+@Mapper(componentModel = "spring", uses = {CustomFieldAnswerMapper.class})
 public interface GoalMapper {
 
     /**
@@ -23,15 +23,20 @@ public interface GoalMapper {
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "subGoals", ignore = true)
     Goal toEntity(GoalRequest request);
 
     /**
      * Update existing Goal entity from GoalRequest DTO
-     * Note: Preserves id, userId, createdAt, and updatedAt
+     * Note: Preserves id, userId, createdAt, updatedAt
+     * parent and subGoals are managed through separate endpoints
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "parent", ignore = true)
+    @Mapping(target = "subGoals", ignore = true)
     void updateEntity(GoalRequest request, @MappingTarget Goal goal);
 }

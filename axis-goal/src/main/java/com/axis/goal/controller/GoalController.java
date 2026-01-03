@@ -3,7 +3,7 @@ package com.axis.goal.controller;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.Goal.GoalType;
+import com.axis.goal.model.entity.GoalType;
 import com.axis.goal.service.GoalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

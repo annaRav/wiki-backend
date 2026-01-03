@@ -1,19 +1,23 @@
-package com.axis.goal.service.impl;
+package com.axis.goal.service.pg;
 
+import com.axis.common.exception.BusinessException;
 import com.axis.common.exception.ResourceNotFoundException;
 import com.axis.common.security.SecurityUtils;
 import com.axis.goal.mapper.GoalMapper;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
+import com.axis.goal.model.entity.CustomFieldDefinition;
 import com.axis.goal.model.entity.Goal;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.Goal.GoalType;
+import com.axis.goal.model.entity.GoalType;
+import com.axis.goal.repository.CustomFieldDefinitionRepository;
 import com.axis.goal.repository.GoalRepository;
 import com.axis.goal.service.GoalService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,7 @@ public class GoalServicePg implements GoalService {
 
     private final GoalRepository goalRepository;
     private final GoalMapper goalMapper;
+    private final CustomFieldDefinitionRepository fieldDefinitionRepository;
 
     @Override
     @Transactional
@@ -36,6 +41,8 @@ public class GoalServicePg implements GoalService {
 
         Goal goal = goalMapper.toEntity(request);
         goal.setUserId(userId);
+
+        setupCustomFieldAnswers(goal);
 
         Goal saved = goalRepository.save(goal);
         log.info("Created goal with id: {} for user: {}", saved.getId(), userId);
@@ -53,11 +60,10 @@ public class GoalServicePg implements GoalService {
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", id));
 
         goalMapper.updateEntity(request, goal);
+        setupCustomFieldAnswers(goal);
 
-        Goal updated = goalRepository.save(goal);
         log.info("Updated goal: {} for user: {}", id, userId);
-
-        return goalMapper.toResponse(updated);
+        return goalMapper.toResponse(goal);
     }
 
     @Override
@@ -115,5 +121,30 @@ public class GoalServicePg implements GoalService {
     private UUID getCurrentUserId() {
         return SecurityUtils.getCurrentUserIdAsUUID()
                 .orElseThrow(() -> new IllegalStateException("User is not authenticated"));
+    }
+
+    /**
+     * Sets up bidirectional relationships for custom field answers and validates them.
+     * Similar to GoalTypeServicePg handling custom field definitions.
+     */
+    private void setupCustomFieldAnswers(Goal goal) {
+        if (goal.getCustomAnswers() != null && !goal.getCustomAnswers().isEmpty()) {
+            goal.getCustomAnswers().forEach(answer -> {
+                answer.setGoal(goal);
+
+                // Validate that field definition exists and belongs to the goal's type
+                CustomFieldDefinition definition = fieldDefinitionRepository.findById(answer.getFieldDefinition().getId())
+                        .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", answer.getFieldDefinition().getId()));
+
+                if (!definition.getGoalType().getId().equals(goal.getType().getId())) {
+                    throw new BusinessException(
+                            "Custom field '" + definition.getLabel() + "' does not belong to goal type '" + goal.getType().getTitle() + "'",
+                            HttpStatus.BAD_REQUEST
+                    );
+                }
+
+                answer.setFieldDefinition(definition);
+            });
+        }
     }
 }

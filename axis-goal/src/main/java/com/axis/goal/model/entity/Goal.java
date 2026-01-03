@@ -1,13 +1,17 @@
 package com.axis.goal.model.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -29,22 +33,25 @@ public class Goal {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "goal_type_id", nullable = false)
     private GoalType type;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private GoalStatus status;
 
-    @Column(name = "start_date")
-    private LocalDate startDate;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Goal parent;
 
-    @Column(name = "deadline")
-    private LocalDate deadline;
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Goal> subGoals = new ArrayList<>();
 
-    @Column(name = "completion_date")
-    private LocalDate completionDate;
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<CustomFieldAnswer> customAnswers = new ArrayList<>();
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -56,12 +63,6 @@ public class Goal {
     @LastModifiedDate
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public enum GoalType {
-        LONG_TERM,    // 1-5+ years
-        MEDIUM_TERM,  // 3-12 months
-        SHORT_TERM    // days to weeks
-    }
 
     public enum GoalStatus {
         NOT_STARTED,

@@ -52,7 +52,10 @@ spec:
         - name: DB_PORT
           value: "5432"
         - name: DB_NAME
-          value: "axis_app"
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-app-config
+              key: POSTGRES_DB
         - name: DB_USERNAME
           valueFrom:
             configMapKeyRef:
