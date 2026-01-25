@@ -92,6 +92,40 @@ data:
             "phone",
             "offline_access"
           ]
+        },
+        {
+          "clientId": "axis-postman",
+          "enabled": true,
+          "protocol": "openid-connect",
+          "publicClient": true,
+          "redirectUris": [
+            "https://oauth.pstmn.io/v1/callback",
+            "https://oauth.pstmn.io/v1/browser-callback",
+            "http://localhost:8080/*"
+          ],
+          "webOrigins": [
+            "*"
+          ],
+          "standardFlowEnabled": true,
+          "implicitFlowEnabled": false,
+          "directAccessGrantsEnabled": true,
+          "serviceAccountsEnabled": false,
+          "authorizationServicesEnabled": false,
+          "fullScopeAllowed": true,
+          "nodeReRegistrationTimeout": -1,
+          "defaultClientScopes": [
+            "web-origins",
+            "acr",
+            "profile",
+            "roles",
+            "email"
+          ],
+          "optionalClientScopes": [
+            "address",
+            "phone",
+            "offline_access",
+            "microprofile-jwt"
+          ]
         }
       ],
       "users": [

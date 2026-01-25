@@ -24,6 +24,7 @@ public interface GoalTypeMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "levelNumber", ignore = true)
     @Mapping(target = "goals", ignore = true)
     GoalType toEntity(GoalTypeRequest request);
 
@@ -32,6 +33,7 @@ public interface GoalTypeMapper {
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
+    @Mapping(target = "levelNumber", ignore = true)
     @Mapping(target = "goals", ignore = true)
     void updateEntity(GoalTypeRequest request, @MappingTarget GoalType goalType);
 

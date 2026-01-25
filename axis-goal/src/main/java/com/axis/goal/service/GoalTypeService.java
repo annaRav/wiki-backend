@@ -10,27 +10,27 @@ import java.util.UUID;
 public interface GoalTypeService {
 
     /**
-     * Створити новий тип цілі для автентифікованого користувача
+     * Create a new goal type for the authenticated user
      */
     GoalTypeResponse create(GoalTypeRequest request);
 
     /**
-     * Оновити існуючу конфігурацію типу цілі
+     * Update an existing goal type configuration
      */
     GoalTypeResponse update(UUID id, GoalTypeRequest request);
 
     /**
-     * Знайти тип цілі за ID (тільки якщо він належить користувачу)
+     * Find goal type by ID (only if it belongs to the user)
      */
     GoalTypeResponse findById(UUID id);
 
     /**
-     * Знайти всі типи цілей користувача з пагінацією
+     * Find all user's goal types with pagination
      */
     Page<GoalTypeResponse> findAll(Pageable pageable);
 
     /**
-     * Видалити тип цілі
+     * Delete a goal type
      */
     void delete(UUID id);
 }

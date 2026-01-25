@@ -24,19 +24,19 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/goal-types")
 @RequiredArgsConstructor
-@Tag(name = "Goal Types", description = "API для налаштування рівнів цілей та схем кастомних полів")
+@Tag(name = "Goal Types", description = "API for configuring goal levels and custom field schemas")
 public class GoalTypeController {
 
     private final GoalTypeService goalTypeService;
 
     @Operation(
-            summary = "Створити новий тип цілі (рівень)",
-            description = "Додає нову конфігурацію шару з кастомними полями для користувача"
+            summary = "Create new goal type (level)",
+            description = "Adds a new layer configuration with custom fields for the user"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Тип цілі успішно створено"),
-            @ApiResponse(responseCode = "400", description = "Некоректні вхідні дані"),
-            @ApiResponse(responseCode = "401", description = "Користувач не авторизований")
+            @ApiResponse(responseCode = "201", description = "Goal type successfully created"),
+            @ApiResponse(responseCode = "400", description = "Invalid input data"),
+            @ApiResponse(responseCode = "401", description = "User not authorized")
     })
     @PostMapping
     public ResponseEntity<GoalTypeResponse> create(@Valid @RequestBody GoalTypeRequest request) {
@@ -46,16 +46,16 @@ public class GoalTypeController {
     }
 
     @Operation(
-            summary = "Оновити існуючий тип цілі",
-            description = "Оновлює назву, номер рівня або схему кастомних полів"
+            summary = "Update goal type",
+            description = "Updates the title or custom field schema"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Тип цілі успішно оновлено"),
-            @ApiResponse(responseCode = "404", description = "Тип цілі не знайдено")
+            @ApiResponse(responseCode = "200", description = "Goal type successfully updated"),
+            @ApiResponse(responseCode = "404", description = "Goal type not found")
     })
     @PutMapping("/{id}")
     public ResponseEntity<GoalTypeResponse> update(
-            @Parameter(description = "ID типу цілі") @PathVariable UUID id,
+            @Parameter(description = "Goal type ID") @PathVariable UUID id,
             @Valid @RequestBody GoalTypeRequest request) {
         log.debug("Updating goal type: {}", id);
         GoalTypeResponse response = goalTypeService.update(id, request);
@@ -63,20 +63,20 @@ public class GoalTypeController {
     }
 
     @Operation(
-            summary = "Отримати тип цілі за ID",
-            description = "Повертає повну схему типу цілі, включаючи описи кастомних полів"
+            summary = "Get goal type by ID",
+            description = "Returns the full goal type schema, including custom field definitions"
     )
     @GetMapping("/{id}")
     public ResponseEntity<GoalTypeResponse> findById(
-            @Parameter(description = "ID типу цілі") @PathVariable UUID id) {
+            @Parameter(description = "Goal type ID") @PathVariable UUID id) {
         log.debug("Finding goal type: {}", id);
         GoalTypeResponse response = goalTypeService.findById(id);
         return ResponseEntity.ok(response);
     }
 
     @Operation(
-            summary = "Отримати всі типи цілей",
-            description = "Повертає список усіх налаштованих рівнів для поточного користувача"
+            summary = "Get all goal types",
+            description = "Returns a list of all configured levels for the current user"
     )
     @GetMapping
     public ResponseEntity<Page<GoalTypeResponse>> findAll(@PageableDefault(size = 20, sort = "levelNumber") Pageable pageable) {
@@ -86,16 +86,16 @@ public class GoalTypeController {
     }
 
     @Operation(
-            summary = "Видалити тип цілі",
-            description = "Видаляє конфігурацію типу цілі. Увага: це призведе до видалення всіх пов'язаних цілей!"
+            summary = "Delete goal type",
+            description = "Deletes the goal type configuration. Warning: this will delete all related goals!"
     )
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Тип цілі успішно видалено"),
-            @ApiResponse(responseCode = "404", description = "Тип цілі не знайдено")
+            @ApiResponse(responseCode = "204", description = "Goal type successfully deleted"),
+            @ApiResponse(responseCode = "404", description = "Goal type not found")
     })
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(
-            @Parameter(description = "ID типу цілі") @PathVariable UUID id) {
+            @Parameter(description = "Goal type ID") @PathVariable UUID id) {
         log.debug("Deleting goal type: {}", id);
         goalTypeService.delete(id);
         return ResponseEntity.noContent().build();
