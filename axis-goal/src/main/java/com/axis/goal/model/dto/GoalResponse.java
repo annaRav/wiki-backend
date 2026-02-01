@@ -1,7 +1,6 @@
 package com.axis.goal.model.dto;
 
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.GoalType;
 import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
@@ -20,8 +19,8 @@ public record GoalResponse(
     @Schema(description = "Detailed description of the goal", example = "Master Spring Boot 3 and build microservices")
     String description,
 
-    @Schema(description = "Type of the goal", example = "MEDIUM_TERM")
-    GoalType type,
+    @Schema(description = "ID of the goal type")
+    UUID typeId,
 
     @Schema(description = "Current status of the goal", example = "IN_PROGRESS")
     GoalStatus status,

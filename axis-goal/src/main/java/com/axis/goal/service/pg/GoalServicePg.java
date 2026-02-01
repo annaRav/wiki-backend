@@ -96,11 +96,11 @@ public class GoalServicePg implements GoalService {
     }
 
     @Override
-    public Page<GoalResponse> findByType(GoalType type, Pageable pageable) {
+    public Page<GoalResponse> findByTypeId(UUID typeId, Pageable pageable) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding goals with type: {} for user: {}", type, userId);
+        log.debug("Finding goals with type ID: {} for user: {}", typeId, userId);
 
-        return goalRepository.findByUserIdAndType(userId, type, pageable)
+        return goalRepository.findByUserIdAndTypeId(userId, typeId, pageable)
                 .map(goalMapper::toResponse);
     }
 

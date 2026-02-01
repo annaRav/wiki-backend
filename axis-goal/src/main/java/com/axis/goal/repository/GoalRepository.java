@@ -2,7 +2,6 @@ package com.axis.goal.repository;
 
 import com.axis.goal.model.entity.Goal;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.GoalType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -25,9 +24,9 @@ public interface GoalRepository extends JpaRepository<Goal, UUID> {
     Page<Goal> findByUserIdAndStatus(UUID userId, GoalStatus status, Pageable pageable);
 
     /**
-     * Find goals by user and type
+     * Find goals by user and type ID
      */
-    Page<Goal> findByUserIdAndType(UUID userId, GoalType type, Pageable pageable);
+    Page<Goal> findByUserIdAndTypeId(UUID userId, UUID typeId, Pageable pageable);
 
     /**
      * Find a specific goal by id and userId (for security)

@@ -3,7 +3,6 @@ package com.axis.goal.controller;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.GoalType;
 import com.axis.goal.service.GoalService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -117,19 +116,19 @@ public class GoalController {
     }
 
     @Operation(
-        summary = "Get goals by type",
-        description = "Retrieves goals filtered by type (LONG_TERM, MEDIUM_TERM, SHORT_TERM) for the authenticated user"
+        summary = "Get goals by type ID",
+        description = "Retrieves goals filtered by goal type ID for the authenticated user"
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Goals retrieved successfully"),
         @ApiResponse(responseCode = "401", description = "User not authenticated")
     })
-    @GetMapping("/type/{type}")
-    public ResponseEntity<Page<GoalResponse>> findByType(
-            @Parameter(description = "Goal type") @PathVariable GoalType type,
+    @GetMapping("/type/{typeId}")
+    public ResponseEntity<Page<GoalResponse>> findByTypeId(
+            @Parameter(description = "Goal type ID") @PathVariable UUID typeId,
             @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        log.debug("Finding goals with type: {}", type);
-        Page<GoalResponse> response = goalService.findByType(type, pageable);
+        log.debug("Finding goals with type ID: {}", typeId);
+        Page<GoalResponse> response = goalService.findByTypeId(typeId, pageable);
         return ResponseEntity.ok(response);
     }
 

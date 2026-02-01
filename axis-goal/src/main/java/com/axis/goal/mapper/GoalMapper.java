@@ -13,6 +13,7 @@ public interface GoalMapper {
     /**
      * Convert Goal entity to GoalResponse DTO
      */
+    @Mapping(target = "typeId", source = "type.id")
     GoalResponse toResponse(Goal goal);
 
     /**
