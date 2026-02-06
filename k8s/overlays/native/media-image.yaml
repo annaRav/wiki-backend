@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
       - name: media
-        image: axis/media-native:latest
+        image: ghcr.io/annarav/axis-media:latest

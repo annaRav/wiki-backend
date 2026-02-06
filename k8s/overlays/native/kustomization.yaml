@@ -16,11 +16,13 @@ labels:
       build-type: native
 
 patches:
-  # Update image names to native variants
+  # Update image names to GitHub Container Registry
   - path: gateway-image.yaml
   - path: goal-image.yaml
   - path: media-image.yaml
   - path: notification-image.yaml
+  # Add image pull secrets for GHCR
+  - path: image-pull-secret.yaml
   # Reduce resources for native images
   - path: gateway-resources.yaml
   - path: goal-resources.yaml

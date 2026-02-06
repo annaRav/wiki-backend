@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
       - name: notification
-        image: axis/notification-native:latest
+        image: ghcr.io/annarav/axis-notification:latest

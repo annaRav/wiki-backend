@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
       - name: gateway
-        image: axis/gateway-native:latest
+        image: ghcr.io/annarav/axis-gateway:latest

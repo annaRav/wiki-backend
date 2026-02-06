@@ -8,4 +8,4 @@ spec:
     spec:
       containers:
       - name: goal
-        image: axis/goal-native:latest
+        image: ghcr.io/annarav/axis-goal:latest
