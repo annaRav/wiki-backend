@@ -15,19 +15,24 @@ dependencyManagement {
 dependencies {
     implementation project(':axis-common')
 
-    // Spring Cloud Gateway
+    // Spring Cloud Gateway (WebFlux-based)
     implementation('org.springframework.cloud:spring-cloud-starter-gateway') {
-        // Оскільки це чистий WebFlux, виключаємо всі можливі залежності Web MVC
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
         exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
     }
+
+    // Explicitly add WebFlux for Netty
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
 
     // Security
     implementation 'org.springframework.boot:spring-boot-starter-security'
     implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
 
-    // Actuator
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Actuator (exclude Tomcat)
+    implementation('org.springframework.boot:spring-boot-starter-actuator') {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-web'
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-tomcat'
+    }
 
     // Lombok
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
@@ -59,6 +64,10 @@ graalvmNative {
             imageName = 'axis-gateway'
             buildArgs.add('--verbose')
             buildArgs.add('-H:+ReportExceptionStackTraces')
+            // Force Netty for reactive Gateway
+            buildArgs.add('-H:IncludeResources=META-INF/native-image/.*')
+            buildArgs.add('--initialize-at-build-time=reactor.netty')
+            buildArgs.add('--initialize-at-build-time=io.netty')
         }
     }
 }
@@ -67,7 +76,9 @@ bootBuildImage {
     imageName = 'axis/gateway-native'
     environment = [
         'BP_NATIVE_IMAGE': 'true',
-        'BP_JVM_VERSION': '21'
+        'BP_JVM_VERSION': '21',
+        // Force Netty server for reactive Gateway
+        'BP_NATIVE_IMAGE_BUILD_ARGUMENTS': '--initialize-at-build-time=reactor.netty,io.netty'
     ]
     builder = 'paketobuildpacks/builder-jammy-tiny:latest'
 }

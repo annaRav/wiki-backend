@@ -8,6 +8,11 @@ spring:
   main:
     web-application-type: reactive
 
+  reactor:
+    netty:
+      pool:
+        type: fixed
+
   cloud:
     gateway:
       routes:
