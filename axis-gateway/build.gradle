@@ -72,6 +72,14 @@ graalvmNative {
     }
 }
 
+// Disable Spring AOT processing (not needed for native image via buildpacks)
+tasks.named('processAot') {
+    enabled = false
+}
+tasks.named('processTestAot') {
+    enabled = false
+}
+
 bootBuildImage {
     imageName = 'axis/gateway-native'
     environment = [
