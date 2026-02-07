@@ -93,4 +93,16 @@ bootBuildImage {
         'BP_JVM_VERSION': '21'
     ]
     builder = 'paketobuildpacks/builder-jammy-tiny:latest'
+
+    // Named volumes for buildpacks cache (local development only)
+    buildCache {
+        volume {
+            name = "cache-${rootProject.name}-notification.build"
+        }
+    }
+    launchCache {
+        volume {
+            name = "cache-${rootProject.name}-notification.launch"
+        }
+    }
 }

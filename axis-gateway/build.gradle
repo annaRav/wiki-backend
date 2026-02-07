@@ -102,4 +102,17 @@ bootBuildImage {
         'BP_NATIVE_IMAGE_BUILD_ARGUMENTS': '--initialize-at-build-time=reactor.netty,io.netty'
     ]
     builder = 'paketobuildpacks/builder-jammy-tiny:latest'
+
+    // Named volumes for buildpacks cache (local development only)
+    // CI/CD will ignore these and rebuild from scratch
+    buildCache {
+        volume {
+            name = "cache-${rootProject.name}-gateway.build"
+        }
+    }
+    launchCache {
+        volume {
+            name = "cache-${rootProject.name}-gateway.launch"
+        }
+    }
 }
