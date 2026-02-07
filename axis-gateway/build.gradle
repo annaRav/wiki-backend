@@ -81,8 +81,9 @@ bootBuildImage {
         'BP_NATIVE_IMAGE': 'true',
         'BP_JVM_VERSION': '21',
         // CRITICAL: Force Netty (not Tomcat) for reactive Gateway
-        // Spring AOT processing handles Netty initialization automatically
-        'BP_WEB_SERVER': 'netty'
+        'BP_WEB_SERVER': 'netty',
+        // Force Logback/SLF4J runtime initialization (triggered during AOT processing)
+        'BP_NATIVE_IMAGE_BUILD_ARGUMENTS': '--initialize-at-run-time=ch.qos.logback,org.slf4j'
     ]
     builder = 'paketobuildpacks/builder-jammy-tiny:latest'
 
