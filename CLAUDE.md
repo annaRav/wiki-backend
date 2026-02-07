@@ -68,23 +68,25 @@ The project uses a **hybrid build approach** optimized for both development spee
 ./gradlew jibDockerBuild
 ```
 
-### Building Native Images (CI/CD Production)
+### Building Native Images (CI/CD Production Only)
+
+**IMPORTANT:** This project uses Spring Boot buildpacks exclusively for native image compilation. The `org.graalvm.buildtools.native` Gradle plugin is NOT used and should NOT be added to service build.gradle files, as it interferes with Spring AOT processing.
 
 ```bash
-# Build native executable (local testing only - slow!)
-./gradlew :axis-gateway:nativeCompile
-
-# Build native Docker image using Spring Boot buildpacks (recommended for CI/CD)
-./gradlew :axis-gateway:bootBuildImage
-
-# Build all native images
+# Build native Docker image using Spring Boot buildpacks
+# This is done automatically in CI/CD (GitHub Actions)
 ./gradlew :axis-gateway:bootBuildImage
 ./gradlew :axis-goal:bootBuildImage
 ./gradlew :axis-notification:bootBuildImage
 ./gradlew :axis-media:bootBuildImage
 ```
 
-**Note:** Native builds require GraalVM and take significantly longer (5-10 minutes per service). Use JVM builds for local development and let CI/CD handle native image builds.
+**Key Points:**
+- Native builds take 5-10 minutes per service
+- Spring Boot buildpacks handle all native image configuration
+- Spring AOT processing is automatic (no GraalVM plugin needed)
+- Use JVM builds for local development
+- Let CI/CD handle native image builds
 
 ### Local Development with Skaffold
 
@@ -411,6 +413,8 @@ The notification service manages user notifications and notification preferences
 5. **JPA ddl-auto**: Always use `validate`, never `update` or `create-drop`
 6. **Keycloak URL**: Use internal service name `http://keycloak:8080` not `localhost:8180` in configs
 7. **Namespace**: Always use `axis` namespace, not `default`
+8. **GraalVM Plugin**: DO NOT add `org.graalvm.buildtools.native` plugin to services. Use Spring Boot buildpacks (`bootBuildImage`) exclusively. The GraalVM plugin interferes with Spring AOT processing.
+9. **Spring AOT**: Never disable AOT processing (`processAot` task) - it's required for native images. Spring Boot buildpacks handle it automatically.
 
 ## Maintaining This Documentation
 

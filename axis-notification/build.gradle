@@ -3,7 +3,6 @@ plugins {
     id 'org.springframework.boot'
     id 'io.spring.dependency-management'
     id 'com.google.cloud.tools.jib'
-    id 'org.graalvm.buildtools.native'
 }
 
 dependencyManagement {
@@ -68,18 +67,10 @@ jib {
     }
 }
 
-graalvmNative {
-    binaries {
-        main {
-            imageName = 'axis-notification'
-            buildArgs.add('--verbose')
-            buildArgs.add('-H:+ReportExceptionStackTraces')
-        }
-    }
-}
-
 // Spring AOT processing is REQUIRED for native images
 // AOT generates ahead-of-time metadata for reflection, serialization, etc.
+// Native image compilation is handled by Spring Boot buildpacks (bootBuildImage task)
+// GraalVM plugin is not needed and can interfere with AOT processing
 
 bootBuildImage {
     imageName = 'axis/notification-native'
