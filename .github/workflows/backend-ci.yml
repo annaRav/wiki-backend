@@ -26,7 +26,8 @@ jobs:
           java-version: '21'
           distribution: 'graalvm-community'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          cache: 'gradle'
+          # Disable cache to force fresh build
+          cache: ''
 
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
@@ -43,6 +44,8 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          buildkitd-flags: --debug
 
       - name: Log in to the Container registry
         uses: docker/login-action@v3
@@ -51,13 +54,23 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Native Images
+      - name: Clear Docker buildpacks cache volumes
         run: |
-          # Build native images with clean cache (no Docker layer caching)
-          ./gradlew :axis-gateway:bootBuildImage --imageName=axis-gateway-native:${{ github.sha }} --cleanCache
-          ./gradlew :axis-goal:bootBuildImage --imageName=axis-goal-native:${{ github.sha }} --cleanCache
-          ./gradlew :axis-notification:bootBuildImage --imageName=axis-notification-native:${{ github.sha }} --cleanCache
-          ./gradlew :axis-media:bootBuildImage --imageName=axis-media-native:${{ github.sha }} --cleanCache
+          # Remove all pack-cache volumes (buildpacks layer cache)
+          docker volume ls -q | grep pack-cache | xargs -r docker volume rm || true
+          # Prune Docker builder cache
+          docker builder prune --all --force
+
+      - name: Build Native Images
+        env:
+          # Force buildpacks to skip cache and rebuild everything
+          DOCKER_BUILDKIT: 1
+        run: |
+          # Build native images with full cache bypass
+          ./gradlew :axis-gateway:bootBuildImage --imageName=axis-gateway-native:${{ github.sha }} --cleanCache --no-build-cache
+          ./gradlew :axis-goal:bootBuildImage --imageName=axis-goal-native:${{ github.sha }} --cleanCache --no-build-cache
+          ./gradlew :axis-notification:bootBuildImage --imageName=axis-notification-native:${{ github.sha }} --cleanCache --no-build-cache
+          ./gradlew :axis-media:bootBuildImage --imageName=axis-media-native:${{ github.sha }} --cleanCache --no-build-cache
 
       - name: Tag and Push Images to GHCR
         run: |
