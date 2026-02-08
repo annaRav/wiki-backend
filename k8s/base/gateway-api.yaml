@@ -1,0 +1,137 @@
+# Note: GatewayClass 'nginx' is already created by NGINX Gateway Fabric
+# No need to create it again - it's managed by the controller
+---
+# Gateway - infrastructure layer (listeners, ports, TLS)
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: axis-gateway
+  namespace: axis
+spec:
+  gatewayClassName: nginx
+  listeners:
+  - name: http
+    protocol: HTTP
+    port: 80
+    allowedRoutes:
+      namespaces:
+        from: Same
+---
+# HTTPRoute - routing rules for Keycloak (authentication)
+# Routes all /realms/*, /resources/*, /js/* directly to Keycloak
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: keycloak-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /realms
+    backendRefs:
+    - name: keycloak
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /resources
+    backendRefs:
+    - name: keycloak
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /js
+    backendRefs:
+    - name: keycloak
+      port: 8080
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /admin
+    backendRefs:
+    - name: keycloak
+      port: 8080
+---
+# HTTPRoute - routing rules for Goal service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: goal-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/goals
+    backendRefs:
+    - name: axis-goal
+      port: 8081
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/goal-types
+    backendRefs:
+    - name: axis-goal
+      port: 8081
+---
+# HTTPRoute - routing rules for Notification service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: notification-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/notifications
+    backendRefs:
+    - name: axis-notification
+      port: 8082
+---
+# HTTPRoute - routing rules for Media service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: media-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/media
+    backendRefs:
+    - name: axis-media
+      port: 8083
+---
+# HTTPRoute - health checks
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: health-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /actuator/health
+    backendRefs:
+    - name: axis-goal
+      port: 8081

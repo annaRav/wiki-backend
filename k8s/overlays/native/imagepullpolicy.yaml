@@ -1,18 +1,6 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: axis-gateway
-  namespace: axis
-spec:
-  template:
-    spec:
-      containers:
-      - name: gateway
-        imagePullPolicy: Always
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
   name: axis-goal
   namespace: axis
 spec:

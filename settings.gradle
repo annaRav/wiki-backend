@@ -1,7 +1,6 @@
 rootProject.name = 'axis-backend'
 
 include 'axis-common'
-include 'axis-gateway'
 include 'axis-media'
 include 'axis-goal'
 include 'axis-notification'

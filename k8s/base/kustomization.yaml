@@ -17,8 +17,10 @@ resources:
   - infrastructure/redis.yaml
   - infrastructure/keycloak-realm-config.yaml
 
+  # Gateway API (modern Ingress replacement)
+  - gateway-api.yaml
+
   # Application services
-  - axis-gateway.yaml
   - axis-goal.yaml
   - axis-media.yaml
   - axis-notification.yaml

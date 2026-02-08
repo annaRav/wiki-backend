@@ -60,7 +60,6 @@ jobs:
         run: |
           # Build native images - buildpacks cache is configured in build.gradle
           # Cache is automatically stored in GHCR and reused across builds
-          ./gradlew :axis-gateway:bootBuildImage --imageName=axis-gateway-native:${{ github.sha }}
           ./gradlew :axis-goal:bootBuildImage --imageName=axis-goal-native:${{ github.sha }}
           ./gradlew :axis-notification:bootBuildImage --imageName=axis-notification-native:${{ github.sha }}
           ./gradlew :axis-media:bootBuildImage --imageName=axis-media-native:${{ github.sha }}
@@ -71,9 +70,6 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
 
           # Tag images for GHCR
-          docker tag axis-gateway-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-gateway:${{ github.sha }}
-          docker tag axis-gateway-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-gateway:latest
-
           docker tag axis-goal-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:${{ github.sha }}
           docker tag axis-goal-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:latest
 
@@ -84,9 +80,6 @@ jobs:
           docker tag axis-media-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-media:latest
 
           # Push all images
-          docker push ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-gateway:${{ github.sha }}
-          docker push ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-gateway:latest
-
           docker push ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:${{ github.sha }}
           docker push ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:latest
 
