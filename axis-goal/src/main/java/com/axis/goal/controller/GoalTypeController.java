@@ -46,6 +46,8 @@ public class GoalTypeController {
         return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
+
+    //todo redo with patch
     @Operation(
             summary = "Update goal type",
             description = "Updates the title or custom field schema"
