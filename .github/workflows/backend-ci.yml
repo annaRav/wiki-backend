@@ -26,7 +26,6 @@ jobs:
           java-version: '21'
           distribution: 'graalvm-community'
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          # Cache Gradle dependencies (auto-invalidates on build.gradle changes)
           cache: 'gradle'
 
       - name: Grant execute permission for gradlew
@@ -39,8 +38,17 @@ jobs:
       - name: Clean build artifacts
         run: ./gradlew clean
 
-      - name: Build and Test with Gradle
+      - name: Build and Test with Gradle (JVM)
         run: ./gradlew build -x test
+
+      - name: Build native executable (axis-goal)
+        run: ./gradlew :axis-goal:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
+
+      - name: Build native executable (axis-notification)
+        run: ./gradlew :axis-notification:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
+
+      - name: Build native executable (axis-media)
+        run: ./gradlew :axis-media:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -52,23 +60,14 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build Native Images with Registry Cache
-        env:
-          DOCKER_BUILDKIT: 1
-          # Registry cache images for buildpacks (configured in build.gradle)
-          BUILDPACK_CACHE_REGISTRY: ${{ env.REGISTRY }}/${{ env.OWNER_LC }}
+      - name: Build Docker images
         run: |
-          # Build native images - buildpacks cache is configured in build.gradle
-          # Cache is automatically stored in GHCR and reused across builds
-          ./gradlew :axis-goal:bootBuildImage --imageName=axis-goal-native:${{ github.sha }}
-          ./gradlew :axis-notification:bootBuildImage --imageName=axis-notification-native:${{ github.sha }}
-          ./gradlew :axis-media:bootBuildImage --imageName=axis-media-native:${{ github.sha }}
+          docker build -f axis-goal/src/main/docker/Dockerfile.native -t axis-goal-native:${{ github.sha }} .
+          docker build -f axis-notification/src/main/docker/Dockerfile.native -t axis-notification-native:${{ github.sha }} .
+          docker build -f axis-media/src/main/docker/Dockerfile.native -t axis-media-native:${{ github.sha }} .
 
       - name: Tag and Push Images to GHCR
         run: |
-          # Login to GHCR
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
-
           # Tag images for GHCR
           docker tag axis-goal-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:${{ github.sha }}
           docker tag axis-goal-native:${{ github.sha }} ${{ env.REGISTRY }}/${{ env.OWNER_LC }}/axis-goal:latest
