@@ -6,6 +6,7 @@ import com.axis.common.security.SecurityUtils;
 import com.axis.goal.mapper.GoalMapper;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
+import com.axis.goal.model.dto.PageResponse;
 import com.axis.goal.model.entity.CustomFieldDefinition;
 import com.axis.goal.model.entity.Goal;
 import com.axis.goal.model.entity.Goal.GoalStatus;
@@ -14,26 +15,35 @@ import com.axis.goal.repository.CustomFieldDefinitionRepository;
 import com.axis.goal.repository.GoalRepository;
 import com.axis.goal.repository.GoalTypeRepository;
 import com.axis.goal.service.GoalService;
-import lombok.RequiredArgsConstructor;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
+@ApplicationScoped
 public class GoalServicePg implements GoalService {
 
-    private final GoalRepository goalRepository;
-    private final GoalMapper goalMapper;
-    private final CustomFieldDefinitionRepository fieldDefinitionRepository;
-    private final GoalTypeRepository goalTypeRepository;
+    @Inject
+    GoalRepository goalRepository;
+
+    @Inject
+    GoalMapper goalMapper;
+
+    @Inject
+    CustomFieldDefinitionRepository fieldDefinitionRepository;
+
+    @Inject
+    GoalTypeRepository goalTypeRepository;
+
+    @Inject
+    SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -51,10 +61,10 @@ public class GoalServicePg implements GoalService {
 
         setupCustomFieldAnswers(goal);
 
-        Goal saved = goalRepository.save(goal);
-        log.info("Created goal with id: {} for user: {}", saved.getId(), userId);
+        goalRepository.persist(goal);
+        log.info("Created goal with id: {} for user: {}", goal.getId(), userId);
 
-        return goalMapper.toResponse(saved);
+        return goalMapper.toResponse(goal);
     }
 
     @Override
@@ -90,30 +100,51 @@ public class GoalServicePg implements GoalService {
     }
 
     @Override
-    public Page<GoalResponse> findAll(Pageable pageable) {
+    public PageResponse<GoalResponse> findAll(int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
         log.debug("Finding all goals for user: {}", userId);
 
-        return goalRepository.findByUserId(userId, pageable)
-                .map(goalMapper::toResponse);
+        Sort sort = createSort(sortBy, sortDirection);
+        List<Goal> goals = goalRepository.findByUserId(userId, Page.of(page, size), sort);
+        long totalElements = goalRepository.countByUserId(userId);
+
+        List<GoalResponse> responses = goals.stream()
+                .map(goalMapper::toResponse)
+                .toList();
+
+        return PageResponse.of(responses, totalElements, page, size);
     }
 
     @Override
-    public Page<GoalResponse> findByStatus(GoalStatus status, Pageable pageable) {
+    public PageResponse<GoalResponse> findByStatus(GoalStatus status, int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
         log.debug("Finding goals with status: {} for user: {}", status, userId);
 
-        return goalRepository.findByUserIdAndStatus(userId, status, pageable)
-                .map(goalMapper::toResponse);
+        Sort sort = createSort(sortBy, sortDirection);
+        List<Goal> goals = goalRepository.findByUserIdAndStatus(userId, status, Page.of(page, size), sort);
+        long totalElements = goalRepository.countByUserIdAndStatus(userId, status);
+
+        List<GoalResponse> responses = goals.stream()
+                .map(goalMapper::toResponse)
+                .toList();
+
+        return PageResponse.of(responses, totalElements, page, size);
     }
 
     @Override
-    public Page<GoalResponse> findByTypeId(UUID typeId, Pageable pageable) {
+    public PageResponse<GoalResponse> findByTypeId(UUID typeId, int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
         log.debug("Finding goals with type ID: {} for user: {}", typeId, userId);
 
-        return goalRepository.findByUserIdAndTypeId(userId, typeId, pageable)
-                .map(goalMapper::toResponse);
+        Sort sort = createSort(sortBy, sortDirection);
+        List<Goal> goals = goalRepository.findByUserIdAndTypeId(userId, typeId, Page.of(page, size), sort);
+        long totalElements = goalRepository.countByUserIdAndTypeId(userId, typeId);
+
+        List<GoalResponse> responses = goals.stream()
+                .map(goalMapper::toResponse)
+                .toList();
+
+        return PageResponse.of(responses, totalElements, page, size);
     }
 
     @Override
@@ -131,8 +162,18 @@ public class GoalServicePg implements GoalService {
     }
 
     private UUID getCurrentUserId() {
-        return SecurityUtils.getCurrentUserIdAsUUID()
+        return securityUtils.getCurrentUserIdAsUUID()
                 .orElseThrow(() -> new IllegalStateException("User is not authenticated"));
+    }
+
+    private Sort createSort(String sortBy, String sortDirection) {
+        if (sortBy == null || sortBy.isEmpty()) {
+            sortBy = "createdAt";
+        }
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
+            ? Sort.Direction.Ascending
+            : Sort.Direction.Descending;
+        return Sort.by(sortBy, direction);
     }
 
     /**
@@ -145,13 +186,13 @@ public class GoalServicePg implements GoalService {
                 answer.setGoal(goal);
 
                 // Validate that field definition exists and belongs to the goal's type
-                CustomFieldDefinition definition = fieldDefinitionRepository.findById(answer.getFieldDefinition().getId())
+                CustomFieldDefinition definition = fieldDefinitionRepository.findByIdOptional(answer.getFieldDefinition().getId())
                         .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", answer.getFieldDefinition().getId()));
 
                 if (!definition.getGoalType().getId().equals(goal.getType().getId())) {
                     throw new BusinessException(
                             "Custom field '" + definition.getLabel() + "' does not belong to goal type '" + goal.getType().getTitle() + "'",
-                            HttpStatus.BAD_REQUEST
+                            Response.Status.BAD_REQUEST
                     );
                 }
 

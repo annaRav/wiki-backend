@@ -3,124 +3,127 @@ package com.axis.goal.controller;
 import com.axis.goal.model.dto.CustomFieldAnswerRequest;
 import com.axis.goal.model.dto.CustomFieldAnswerResponse;
 import com.axis.goal.service.CustomFieldAnswerService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/goals/{goalId}/custom-field-answers")
-@RequiredArgsConstructor
+@Path("/api/goals/{goalId}/custom-field-answers")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RunOnVirtualThread
 @Tag(name = "Custom Field Answers", description = "API for managing custom field answers for goals")
 public class CustomFieldAnswerController {
 
-    private final CustomFieldAnswerService answerService;
+    @Inject
+    CustomFieldAnswerService answerService;
 
     @Operation(
             summary = "Create a custom field answer",
             description = "Creates a new custom field answer for a specific goal"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Custom field answer created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data or field doesn't belong to goal's type"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Goal or field definition not found"),
-            @ApiResponse(responseCode = "409", description = "Answer already exists for this field")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "201", description = "Custom field answer created successfully"),
+            @APIResponse(responseCode = "400", description = "Invalid request data or field doesn't belong to goal's type"),
+            @APIResponse(responseCode = "401", description = "User not authenticated"),
+            @APIResponse(responseCode = "404", description = "Goal or field definition not found"),
+            @APIResponse(responseCode = "409", description = "Answer already exists for this field")
     })
-    @PostMapping
-    public ResponseEntity<CustomFieldAnswerResponse> create(
-            @Parameter(description = "Goal ID") @PathVariable UUID goalId,
-            @Valid @RequestBody CustomFieldAnswerRequest request) {
+    @POST
+    public Response create(
+            @Parameter(description = "Goal ID") @PathParam("goalId") UUID goalId,
+            @Valid CustomFieldAnswerRequest request) {
         log.debug("Creating custom field answer for goal: {}", goalId);
         CustomFieldAnswerResponse response = answerService.create(goalId, request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     @Operation(
             summary = "Update a custom field answer",
             description = "Updates an existing custom field answer. Only the owner can update."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Custom field answer updated successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated"),
-            @ApiResponse(responseCode = "403", description = "User doesn't have permission"),
-            @ApiResponse(responseCode = "404", description = "Custom field answer not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Custom field answer updated successfully"),
+            @APIResponse(responseCode = "400", description = "Invalid request data"),
+            @APIResponse(responseCode = "401", description = "User not authenticated"),
+            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
+            @APIResponse(responseCode = "404", description = "Custom field answer not found")
     })
-    @PutMapping("/{id}")
-    public ResponseEntity<CustomFieldAnswerResponse> update(
-            @Parameter(description = "Goal ID") @PathVariable UUID goalId,
-            @Parameter(description = "Custom Field Answer ID") @PathVariable UUID id,
-            @Valid @RequestBody CustomFieldAnswerRequest request) {
+    @PUT
+    @Path("/{id}")
+    public CustomFieldAnswerResponse update(
+            @Parameter(description = "Goal ID") @PathParam("goalId") UUID goalId,
+            @Parameter(description = "Custom Field Answer ID") @PathParam("id") UUID id,
+            @Valid CustomFieldAnswerRequest request) {
         log.debug("Updating custom field answer: {}", id);
-        CustomFieldAnswerResponse response = answerService.update(id, request);
-        return ResponseEntity.ok(response);
+        return answerService.update(id, request);
     }
 
     @Operation(
             summary = "Get custom field answer by ID",
             description = "Retrieves a specific custom field answer. Only the owner can view."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Custom field answer retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated"),
-            @ApiResponse(responseCode = "403", description = "User doesn't have permission"),
-            @ApiResponse(responseCode = "404", description = "Custom field answer not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Custom field answer retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated"),
+            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
+            @APIResponse(responseCode = "404", description = "Custom field answer not found")
     })
-    @GetMapping("/{id}")
-    public ResponseEntity<CustomFieldAnswerResponse> findById(
-            @Parameter(description = "Goal ID") @PathVariable UUID goalId,
-            @Parameter(description = "Custom Field Answer ID") @PathVariable UUID id) {
+    @GET
+    @Path("/{id}")
+    public CustomFieldAnswerResponse findById(
+            @Parameter(description = "Goal ID") @PathParam("goalId") UUID goalId,
+            @Parameter(description = "Custom Field Answer ID") @PathParam("id") UUID id) {
         log.debug("Finding custom field answer: {}", id);
-        CustomFieldAnswerResponse response = answerService.findById(id);
-        return ResponseEntity.ok(response);
+        return answerService.findById(id);
     }
 
     @Operation(
             summary = "Get all custom field answers for a goal",
             description = "Retrieves all custom field answers for a specific goal"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Custom field answers retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated"),
-            @ApiResponse(responseCode = "404", description = "Goal not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Custom field answers retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated"),
+            @APIResponse(responseCode = "404", description = "Goal not found")
     })
-    @GetMapping
-    public ResponseEntity<List<CustomFieldAnswerResponse>> findByGoalId(
-            @Parameter(description = "Goal ID") @PathVariable UUID goalId) {
+    @GET
+    public List<CustomFieldAnswerResponse> findByGoalId(
+            @Parameter(description = "Goal ID") @PathParam("goalId") UUID goalId) {
         log.debug("Finding custom field answers for goal: {}", goalId);
-        List<CustomFieldAnswerResponse> response = answerService.findByGoalId(goalId);
-        return ResponseEntity.ok(response);
+        return answerService.findByGoalId(goalId);
     }
 
     @Operation(
             summary = "Delete a custom field answer",
             description = "Deletes a custom field answer. Only the owner can delete. Cannot delete required fields."
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Custom field answer deleted successfully"),
-            @ApiResponse(responseCode = "400", description = "Cannot delete required field answer"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated"),
-            @ApiResponse(responseCode = "403", description = "User doesn't have permission"),
-            @ApiResponse(responseCode = "404", description = "Custom field answer not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "204", description = "Custom field answer deleted successfully"),
+            @APIResponse(responseCode = "400", description = "Cannot delete required field answer"),
+            @APIResponse(responseCode = "401", description = "User not authenticated"),
+            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
+            @APIResponse(responseCode = "404", description = "Custom field answer not found")
     })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @Parameter(description = "Goal ID") @PathVariable UUID goalId,
-            @Parameter(description = "Custom Field Answer ID") @PathVariable UUID id) {
+    @DELETE
+    @Path("/{id}")
+    public Response delete(
+            @Parameter(description = "Goal ID") @PathParam("goalId") UUID goalId,
+            @Parameter(description = "Custom Field Answer ID") @PathParam("id") UUID id) {
         log.debug("Deleting custom field answer: {}", id);
         answerService.delete(id);
-        return ResponseEntity.noContent().build();
+        return Response.noContent().build();
     }
 }

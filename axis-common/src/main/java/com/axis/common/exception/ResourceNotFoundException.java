@@ -1,18 +1,18 @@
 package com.axis.common.exception;
 
-import org.springframework.http.HttpStatus;
+import jakarta.ws.rs.core.Response;
 
 public class ResourceNotFoundException extends BusinessException {
 
     public ResourceNotFoundException(String message) {
-        super(message, HttpStatus.NOT_FOUND);
+        super(message, Response.Status.NOT_FOUND);
     }
 
     public ResourceNotFoundException(String resourceType, Object id) {
-        super(String.format("%s with id '%s' not found", resourceType, id), HttpStatus.NOT_FOUND);
+        super(String.format("%s with id '%s' not found", resourceType, id), Response.Status.NOT_FOUND);
     }
 
     public ResourceNotFoundException(String message, Throwable cause) {
-        super(message, HttpStatus.NOT_FOUND, cause);
+        super(message, Response.Status.NOT_FOUND, cause);
     }
 }

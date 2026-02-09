@@ -1,29 +1,43 @@
 package com.axis.notification.repository;
 
 import com.axis.notification.model.entity.NotificationTemplates;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface NotificationTemplatesRepository extends JpaRepository<NotificationTemplates, UUID> {
+@ApplicationScoped
+public class NotificationTemplatesRepository implements PanacheRepositoryBase<NotificationTemplates, UUID> {
 
     /**
      * Find notification template by type
      */
-    Optional<NotificationTemplates> findByType(NotificationTemplates.Type type);
+    public Optional<NotificationTemplates> findByType(NotificationTemplates.Type type) {
+        return find("type", type).firstResultOptional();
+    }
 
     /**
      * Check if a template with the given type already exists
      */
-    boolean existsByType(NotificationTemplates.Type type);
+    public boolean existsByType(NotificationTemplates.Type type) {
+        return count("type", type) > 0;
+    }
 
     /**
      * Find all templates with pagination
      */
-    Page<NotificationTemplates> findAll(Pageable pageable);
+    public List<NotificationTemplates> findAll(Page page, Sort sort) {
+        return findAll(sort).page(page).list();
+    }
+
+    /**
+     * Count all templates
+     */
+    public long countAll() {
+        return count();
+    }
 }

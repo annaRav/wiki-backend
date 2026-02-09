@@ -1,7 +1,7 @@
 package com.axis.notification.model.dto;
 
 import com.axis.notification.model.entity.NotificationTemplates;
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

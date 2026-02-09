@@ -1,14 +1,12 @@
 package com.axis.goal;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
-@SpringBootApplication(scanBasePackages = {"com.axis.goal", "com.axis.common"})
-@EnableJpaAuditing
+@QuarkusMain
 public class GoalApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(GoalApplication.class, args);
+        Quarkus.run(args);
     }
 }

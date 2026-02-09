@@ -1,10 +1,9 @@
 package com.axis.notification.service;
 
+import com.axis.notification.model.dto.PageResponse;
 import com.axis.notification.model.dto.NotificationTemplateRequest;
 import com.axis.notification.model.dto.NotificationTemplateResponse;
 import com.axis.notification.model.entity.NotificationTemplates;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -33,7 +32,7 @@ public interface NotificationTemplatesService {
     /**
      * Find all notification templates with pagination
      */
-    Page<NotificationTemplateResponse> findAll(Pageable pageable);
+    PageResponse<NotificationTemplateResponse> findAll(int page, int size, String sortBy, String sortDirection);
 
     /**
      * Delete notification template by ID

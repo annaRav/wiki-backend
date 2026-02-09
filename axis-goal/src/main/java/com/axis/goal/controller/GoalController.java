@@ -2,150 +2,160 @@ package com.axis.goal.controller;
 
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
+import com.axis.goal.model.dto.PageResponse;
 import com.axis.goal.model.entity.Goal.GoalStatus;
 import com.axis.goal.service.GoalService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/goals")
-@RequiredArgsConstructor
+@Path("/api/goals")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RunOnVirtualThread
 @Tag(name = "Goals", description = "Goal management API for creating, tracking, and organizing life goals")
 public class GoalController {
 
-    private final GoalService goalService;
+    @Inject
+    GoalService goalService;
 
     @Operation(
         summary = "Create a new goal",
         description = "Creates a new goal for the authenticated user"
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Goal created successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "201", description = "Goal created successfully"),
+        @APIResponse(responseCode = "400", description = "Invalid request data"),
+        @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    @PostMapping
-    public ResponseEntity<GoalResponse> create(@Valid @RequestBody GoalRequest request) {
+    @POST
+    public Response create(@Valid GoalRequest request) {
         log.debug("Creating new goal");
         GoalResponse response = goalService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     @Operation(
         summary = "Update an existing goal",
         description = "Updates an existing goal. Only the owner can update their goals."
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Goal updated successfully"),
-        @ApiResponse(responseCode = "400", description = "Invalid request data"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated"),
-        @ApiResponse(responseCode = "404", description = "Goal not found")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Goal updated successfully"),
+        @APIResponse(responseCode = "400", description = "Invalid request data"),
+        @APIResponse(responseCode = "401", description = "User not authenticated"),
+        @APIResponse(responseCode = "404", description = "Goal not found")
     })
-    @PutMapping("/{id}")
-    public ResponseEntity<GoalResponse> update(
-            @Parameter(description = "Goal ID") @PathVariable UUID id,
-            @Valid @RequestBody GoalRequest request) {
+    @PUT
+    @Path("/{id}")
+    public GoalResponse update(
+            @Parameter(description = "Goal ID") @PathParam("id") UUID id,
+            @Valid GoalRequest request) {
         log.debug("Updating goal: {}", id);
-        GoalResponse response = goalService.update(id, request);
-        return ResponseEntity.ok(response);
+        return goalService.update(id, request);
     }
 
     @Operation(
         summary = "Get goal by ID",
         description = "Retrieves a specific goal by its ID. Only the owner can view their goals."
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Goal retrieved successfully"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated"),
-        @ApiResponse(responseCode = "404", description = "Goal not found")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Goal retrieved successfully"),
+        @APIResponse(responseCode = "401", description = "User not authenticated"),
+        @APIResponse(responseCode = "404", description = "Goal not found")
     })
-    @GetMapping("/{id}")
-    public ResponseEntity<GoalResponse> findById(
-            @Parameter(description = "Goal ID") @PathVariable UUID id) {
+    @GET
+    @Path("/{id}")
+    public GoalResponse findById(
+            @Parameter(description = "Goal ID") @PathParam("id") UUID id) {
         log.debug("Finding goal: {}", id);
-        GoalResponse response = goalService.findById(id);
-        return ResponseEntity.ok(response);
+        return goalService.findById(id);
     }
 
     @Operation(
         summary = "Get all goals",
         description = "Retrieves all goals for the authenticated user with pagination"
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Goals retrieved successfully"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Goals retrieved successfully"),
+        @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    @GetMapping
-    public ResponseEntity<Page<GoalResponse>> findAll(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    @GET
+    public PageResponse<GoalResponse> findAll(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
         log.debug("Finding all goals");
-        Page<GoalResponse> response = goalService.findAll(pageable);
-        return ResponseEntity.ok(response);
+        return goalService.findAll(page, size, sortBy, sortDirection);
     }
 
     @Operation(
         summary = "Get goals by status",
         description = "Retrieves goals filtered by status for the authenticated user"
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Goals retrieved successfully"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Goals retrieved successfully"),
+        @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    @GetMapping("/status/{status}")
-    public ResponseEntity<Page<GoalResponse>> findByStatus(
-            @Parameter(description = "Goal status") @PathVariable GoalStatus status,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    @GET
+    @Path("/status/{status}")
+    public PageResponse<GoalResponse> findByStatus(
+            @Parameter(description = "Goal status") @PathParam("status") GoalStatus status,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
         log.debug("Finding goals with status: {}", status);
-        Page<GoalResponse> response = goalService.findByStatus(status, pageable);
-        return ResponseEntity.ok(response);
+        return goalService.findByStatus(status, page, size, sortBy, sortDirection);
     }
 
     @Operation(
         summary = "Get goals by type ID",
         description = "Retrieves goals filtered by goal type ID for the authenticated user"
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Goals retrieved successfully"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "200", description = "Goals retrieved successfully"),
+        @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    @GetMapping("/type/{typeId}")
-    public ResponseEntity<Page<GoalResponse>> findByTypeId(
-            @Parameter(description = "Goal type ID") @PathVariable UUID typeId,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    @GET
+    @Path("/type/{typeId}")
+    public PageResponse<GoalResponse> findByTypeId(
+            @Parameter(description = "Goal type ID") @PathParam("typeId") UUID typeId,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
         log.debug("Finding goals with type ID: {}", typeId);
-        Page<GoalResponse> response = goalService.findByTypeId(typeId, pageable);
-        return ResponseEntity.ok(response);
+        return goalService.findByTypeId(typeId, page, size, sortBy, sortDirection);
     }
 
     @Operation(
         summary = "Delete a goal",
         description = "Deletes a goal. Only the owner can delete their goals."
     )
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Goal deleted successfully"),
-        @ApiResponse(responseCode = "401", description = "User not authenticated"),
-        @ApiResponse(responseCode = "404", description = "Goal not found")
+    @APIResponses(value = {
+        @APIResponse(responseCode = "204", description = "Goal deleted successfully"),
+        @APIResponse(responseCode = "401", description = "User not authenticated"),
+        @APIResponse(responseCode = "404", description = "Goal not found")
     })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @Parameter(description = "Goal ID") @PathVariable UUID id) {
+    @DELETE
+    @Path("/{id}")
+    public Response delete(
+            @Parameter(description = "Goal ID") @PathParam("id") UUID id) {
         log.debug("Deleting goal: {}", id);
         goalService.delete(id);
-        return ResponseEntity.noContent().build();
+        return Response.noContent().build();
     }
 }

@@ -1,88 +1,31 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot'
-    id 'io.spring.dependency-management'
-    id 'com.google.cloud.tools.jib'
-}
-
-dependencyManagement {
-    imports {
-        mavenBom "org.springframework.cloud:spring-cloud-dependencies:${springCloudVersion}"
-    }
+    id 'io.quarkus'
 }
 
 dependencies {
     implementation project(':axis-common')
 
-    // Spring Boot Web
-    implementation 'org.springframework.boot:spring-boot-starter-web'
+    // Quarkus BOM
+    implementation platform("io.quarkus.platform:quarkus-bom:${quarkusVersion}")
 
-    // Spring Data MongoDB
-    implementation 'org.springframework.boot:spring-boot-starter-data-mongodb'
+    // Core extensions
+    implementation 'io.quarkus:quarkus-rest'
+    implementation 'io.quarkus:quarkus-rest-jackson'
+    implementation 'io.quarkus:quarkus-mongodb-panache'
+    implementation 'io.quarkus:quarkus-oidc'
+    implementation 'io.quarkus:quarkus-smallrye-jwt'
+    implementation 'io.quarkus:quarkus-smallrye-health'
+    implementation 'io.quarkus:quarkus-micrometer-registry-prometheus'
+    implementation 'io.quarkus:quarkus-smallrye-openapi'
+    implementation 'io.quarkus:quarkus-hibernate-validator'
+    implementation 'io.quarkus:quarkus-container-image-jib'
 
-    // Security OAuth2 Resource Server
-    implementation 'org.springframework.boot:spring-boot-starter-security'
-    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
-
-    // MapStruct
-    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
-    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
-
-    // Lombok
+    // Keep MapStruct and Lombok (work with Quarkus)
     compileOnly "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok:${lombokVersion}"
     annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
-
-    // Actuator
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-
-    // Validation
-    implementation 'org.springframework.boot:spring-boot-starter-validation'
-
-    // SpringDoc OpenAPI
-    implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.3.0'
+    implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+    annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 }
 
-jib {
-    from {
-        image = 'eclipse-temurin:21-jre-alpine'
-    }
-    to {
-        image = 'axis/media'
-        tags = [version.toString(), 'latest']
-    }
-    container {
-        jvmFlags = ['-Xms256m', '-Xmx512m']
-        ports = ['8083']
-        labels = [
-            'maintainer': 'axis-team',
-            'service': 'media'
-        ]
-    }
-}
-
-// Spring AOT processing is REQUIRED for native images
-// AOT generates ahead-of-time metadata for reflection, serialization, etc.
-// Native image compilation is handled by Spring Boot buildpacks (bootBuildImage task)
-// GraalVM plugin is not needed and can interfere with AOT processing
-
-bootBuildImage {
-    imageName = 'axis/media-native'
-    environment = [
-        'BP_NATIVE_IMAGE': 'true',
-        'BP_JVM_VERSION': '21'
-    ]
-    builder = 'paketobuildpacks/builder-jammy-tiny:latest'
-
-    // Named volumes for buildpacks cache (local development only)
-    buildCache {
-        volume {
-            name = "cache-${rootProject.name}-media.build"
-        }
-    }
-    launchCache {
-        volume {
-            name = "cache-${rootProject.name}-media.launch"
-        }
-    }
-}

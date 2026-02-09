@@ -8,22 +8,26 @@ import com.axis.notification.repository.NotificationSettingsRepository;
 import com.axis.notification.service.NotificationSettingsService;
 import com.axis.common.exception.BusinessException;
 import com.axis.common.security.SecurityUtils;
-import lombok.RequiredArgsConstructor;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.ws.rs.core.Response;
 
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
+@ApplicationScoped
 public class NotificationSettingsServicePg implements NotificationSettingsService {
 
-    private final NotificationSettingsRepository repository;
-    private final NotificationSettingsMapper mapper;
+    @Inject
+    NotificationSettingsRepository repository;
+
+    @Inject
+    NotificationSettingsMapper mapper;
+
+    @Inject
+    SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -41,13 +45,13 @@ public class NotificationSettingsServicePg implements NotificationSettingsServic
                     log.debug("Creating new notification settings for user: {}", currentUserId);
                     NotificationSettings newEntity = mapper.toEntity(request);
                     newEntity.setUserId(currentUserId);
+                    repository.persist(newEntity);
                     return newEntity;
                 });
 
-        NotificationSettings saved = repository.save(entity);
         log.info("Saved notification settings for user: {}", currentUserId);
 
-        return mapper.toResponse(saved);
+        return mapper.toResponse(entity);
     }
 
     @Override
@@ -75,8 +79,8 @@ public class NotificationSettingsServicePg implements NotificationSettingsServic
     }
 
     private UUID getCurrentUserId() {
-        return SecurityUtils.getCurrentUserIdAsUUID()
-                .orElseThrow(() -> new BusinessException("User not authenticated", HttpStatus.UNAUTHORIZED));
+        return securityUtils.getCurrentUserIdAsUUID()
+                .orElseThrow(() -> new BusinessException("User not authenticated", Response.Status.UNAUTHORIZED));
     }
 
     private NotificationSettings createDefaultSettings(UUID userId) {

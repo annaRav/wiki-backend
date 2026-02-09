@@ -2,9 +2,8 @@ package com.axis.goal.service;
 
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
+import com.axis.goal.model.dto.PageResponse;
 import com.axis.goal.model.entity.Goal.GoalStatus;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -28,17 +27,17 @@ public interface GoalService {
     /**
      * Find all goals for the authenticated user
      */
-    Page<GoalResponse> findAll(Pageable pageable);
+    PageResponse<GoalResponse> findAll(int page, int size, String sortBy, String sortDirection);
 
     /**
      * Find goals by status for the authenticated user
      */
-    Page<GoalResponse> findByStatus(GoalStatus status, Pageable pageable);
+    PageResponse<GoalResponse> findByStatus(GoalStatus status, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Find goals by type ID for the authenticated user
      */
-    Page<GoalResponse> findByTypeId(UUID typeId, Pageable pageable);
+    PageResponse<GoalResponse> findByTypeId(UUID typeId, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Delete a goal

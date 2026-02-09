@@ -1,6 +1,7 @@
 package com.axis.notification.service.pg;
 
 import com.axis.notification.mapper.NotificationLogMapper;
+import com.axis.notification.model.dto.PageResponse;
 import com.axis.notification.model.dto.NotificationLogRequest;
 import com.axis.notification.model.dto.NotificationLogResponse;
 import com.axis.notification.model.entity.NotificationLog;
@@ -9,24 +10,29 @@ import com.axis.notification.service.NotificationLogService;
 import com.axis.common.exception.BusinessException;
 import com.axis.common.exception.ResourceNotFoundException;
 import com.axis.common.security.SecurityUtils;
-import lombok.RequiredArgsConstructor;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import jakarta.ws.rs.core.Response;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
+@ApplicationScoped
 public class NotificationLogServicePg implements NotificationLogService {
 
-    private final NotificationLogRepository repository;
-    private final NotificationLogMapper mapper;
+    @Inject
+    NotificationLogRepository repository;
+
+    @Inject
+    NotificationLogMapper mapper;
+
+    @Inject
+    SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -42,10 +48,10 @@ public class NotificationLogServicePg implements NotificationLogService {
             entity.setStatus(NotificationLog.Status.SENT);
         }
 
-        NotificationLog saved = repository.save(entity);
-        log.info("Created notification log with id: {} for user: {}", saved.getId(), currentUserId);
+        repository.persist(entity);
+        log.info("Created notification log with id: {} for user: {}", entity.getId(), currentUserId);
 
-        return mapper.toResponse(saved);
+        return mapper.toResponse(entity);
     }
 
     @Override
@@ -53,7 +59,7 @@ public class NotificationLogServicePg implements NotificationLogService {
         UUID currentUserId = getCurrentUserId();
         log.debug("Finding notification log by id: {} for user: {}", id, currentUserId);
 
-        NotificationLog entity = repository.findById(id)
+        NotificationLog entity = repository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
 
         // Ensure user can only access their own notifications
@@ -63,40 +69,68 @@ public class NotificationLogServicePg implements NotificationLogService {
     }
 
     @Override
-    public Page<NotificationLogResponse> findByCurrentUser(Pageable pageable) {
+    public PageResponse<NotificationLogResponse> findByCurrentUser(int page, int size, String sortBy, String sortDirection) {
         UUID currentUserId = getCurrentUserId();
-        log.debug("Finding all notifications for user: {} with pagination: {}", currentUserId, pageable);
+        log.debug("Finding all notifications for user: {} with pagination: page={}, size={}", currentUserId, page, size);
 
-        Page<NotificationLog> page = repository.findByUserId(currentUserId, pageable);
-        log.debug("Found {} notifications for user: {}", page.getTotalElements(), currentUserId);
+        Sort sort = "desc".equalsIgnoreCase(sortDirection)
+                ? Sort.descending(sortBy)
+                : Sort.ascending(sortBy);
 
-        return page.map(mapper::toResponse);
+        List<NotificationLog> notifications = repository.findByUserId(currentUserId, Page.of(page, size), sort);
+        long totalElements = repository.countByUserId(currentUserId);
+
+        log.debug("Found {} notifications for user: {}", totalElements, currentUserId);
+
+        List<NotificationLogResponse> content = notifications.stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return PageResponse.of(content, totalElements, page, size);
     }
 
     @Override
-    public Page<NotificationLogResponse> findByCurrentUserAndStatus(NotificationLog.Status status, Pageable pageable) {
+    public PageResponse<NotificationLogResponse> findByCurrentUserAndStatus(NotificationLog.Status status, int page, int size, String sortBy, String sortDirection) {
         UUID currentUserId = getCurrentUserId();
-        log.debug("Finding notifications for user: {} with status: {} and pagination: {}",
-                currentUserId, status, pageable);
+        log.debug("Finding notifications for user: {} with status: {} and pagination: page={}, size={}",
+                currentUserId, status, page, size);
 
-        Page<NotificationLog> page = repository.findByUserIdAndStatus(currentUserId, status, pageable);
-        log.debug("Found {} notifications with status {} for user: {}",
-                page.getTotalElements(), status, currentUserId);
+        Sort sort = "desc".equalsIgnoreCase(sortDirection)
+                ? Sort.descending(sortBy)
+                : Sort.ascending(sortBy);
 
-        return page.map(mapper::toResponse);
+        List<NotificationLog> notifications = repository.findByUserIdAndStatus(currentUserId, status, Page.of(page, size), sort);
+        long totalElements = repository.countByUserIdAndStatus(currentUserId, status);
+
+        log.debug("Found {} notifications with status {} for user: {}", totalElements, status, currentUserId);
+
+        List<NotificationLogResponse> content = notifications.stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return PageResponse.of(content, totalElements, page, size);
     }
 
     @Override
-    public Page<NotificationLogResponse> findByCurrentUserAndChannel(NotificationLog.Channel channel, Pageable pageable) {
+    public PageResponse<NotificationLogResponse> findByCurrentUserAndChannel(NotificationLog.Channel channel, int page, int size, String sortBy, String sortDirection) {
         UUID currentUserId = getCurrentUserId();
-        log.debug("Finding notifications for user: {} with channel: {} and pagination: {}",
-                currentUserId, channel, pageable);
+        log.debug("Finding notifications for user: {} with channel: {} and pagination: page={}, size={}",
+                currentUserId, channel, page, size);
 
-        Page<NotificationLog> page = repository.findByUserIdAndChannel(currentUserId, channel, pageable);
-        log.debug("Found {} notifications with channel {} for user: {}",
-                page.getTotalElements(), channel, currentUserId);
+        Sort sort = "desc".equalsIgnoreCase(sortDirection)
+                ? Sort.descending(sortBy)
+                : Sort.ascending(sortBy);
 
-        return page.map(mapper::toResponse);
+        List<NotificationLog> notifications = repository.findByUserIdAndChannel(currentUserId, channel, Page.of(page, size), sort);
+        long totalElements = repository.countByUserIdAndChannel(currentUserId, channel);
+
+        log.debug("Found {} notifications with channel {} for user: {}", totalElements, channel, currentUserId);
+
+        List<NotificationLogResponse> content = notifications.stream()
+                .map(mapper::toResponse)
+                .toList();
+
+        return PageResponse.of(content, totalElements, page, size);
     }
 
     @Override
@@ -105,17 +139,16 @@ public class NotificationLogServicePg implements NotificationLogService {
         UUID currentUserId = getCurrentUserId();
         log.debug("Updating notification {} status to {} for user: {}", id, status, currentUserId);
 
-        NotificationLog entity = repository.findById(id)
+        NotificationLog entity = repository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
 
         // Ensure user can only update their own notifications
         validateOwnership(entity, currentUserId);
 
         entity.setStatus(status);
-        NotificationLog updated = repository.save(entity);
 
         log.info("Updated notification {} status to {} for user: {}", id, status, currentUserId);
-        return mapper.toResponse(updated);
+        return mapper.toResponse(entity);
     }
 
     @Override
@@ -135,7 +168,7 @@ public class NotificationLogServicePg implements NotificationLogService {
         UUID currentUserId = getCurrentUserId();
         log.debug("Deleting notification {} for user: {}", id, currentUserId);
 
-        NotificationLog entity = repository.findById(id)
+        NotificationLog entity = repository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
 
         // Ensure user can only delete their own notifications
@@ -156,13 +189,13 @@ public class NotificationLogServicePg implements NotificationLogService {
     }
 
     private UUID getCurrentUserId() {
-        return SecurityUtils.getCurrentUserIdAsUUID()
-                .orElseThrow(() -> new BusinessException("User not authenticated", HttpStatus.UNAUTHORIZED));
+        return securityUtils.getCurrentUserIdAsUUID()
+                .orElseThrow(() -> new BusinessException("User not authenticated", Response.Status.UNAUTHORIZED));
     }
 
     private void validateOwnership(NotificationLog entity, UUID currentUserId) {
         if (!entity.getUserId().equals(currentUserId)) {
-            throw new BusinessException("Access denied to notification", HttpStatus.FORBIDDEN);
+            throw new BusinessException("Access denied to notification", Response.Status.FORBIDDEN);
         }
     }
 }

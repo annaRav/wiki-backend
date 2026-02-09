@@ -2,8 +2,7 @@ package com.axis.goal.service;
 
 import com.axis.goal.model.dto.GoalTypeRequest;
 import com.axis.goal.model.dto.GoalTypeResponse;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
+import com.axis.goal.model.dto.PageResponse;
 
 import java.util.UUID;
 
@@ -27,7 +26,7 @@ public interface GoalTypeService {
     /**
      * Find all user's goal types with pagination
      */
-    Page<GoalTypeResponse> findAll(Pageable pageable);
+    PageResponse<GoalTypeResponse> findAll(int page, int size, String sortBy, String sortDirection);
 
     /**
      * Delete a goal type

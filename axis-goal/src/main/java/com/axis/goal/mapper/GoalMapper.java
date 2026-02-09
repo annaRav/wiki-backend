@@ -7,7 +7,7 @@ import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
 
-@Mapper(componentModel = "spring", uses = {CustomFieldAnswerMapper.class})
+@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class})
 public interface GoalMapper {
 
     /**

@@ -1,7 +1,7 @@
 package com.axis.goal.model.dto;
 
 import com.axis.goal.model.enums.CustomFieldType;
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.UUID;
 

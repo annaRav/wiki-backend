@@ -1,4 +1,4 @@
-apiVersion: skaffold/v2beta2
+apiVersion: skaffold/v2beta29
 kind: Config
 metadata:
   name: axis-backend
@@ -7,27 +7,32 @@ build:
   artifacts:
     - image: axis/goal
       context: .
-      jib:
-        project: axis-goal
-        type: gradle
+      docker:
+        dockerfile: axis-goal/src/main/docker/Dockerfile.jvm
+      hooks:
+        before:
+          - command: ["./gradlew", ":axis-goal:build", "-x", "test"]
     - image: axis/media
       context: .
-      jib:
-        project: axis-media
-        type: gradle
+      docker:
+        dockerfile: axis-media/src/main/docker/Dockerfile.jvm
+      hooks:
+        before:
+          - command: ["./gradlew", ":axis-media:build", "-x", "test"]
     - image: axis/notification
       context: .
-      jib:
-        project: axis-notification
-        type: gradle
+      docker:
+        dockerfile: axis-notification/src/main/docker/Dockerfile.jvm
+      hooks:
+        before:
+          - command: ["./gradlew", ":axis-notification:build", "-x", "test"]
   local:
     push: false
-    useBuildkit: true
 
 deploy:
   kustomize:
     paths:
-      - k8s/overlays/jvm
+      - k8s/overlays/dev
 
 portForward:
   - resourceType: service
@@ -62,46 +67,10 @@ portForward:
     localPort: 6379
 
 profiles:
-  - name: dev
-    activation:
-      - command: dev
+  - name: prod
     build:
-      artifacts:
-        - image: axis/goal
-          context: .
-          jib:
-            project: axis-goal
-            type: gradle
-            args: ["--no-daemon"]
-        - image: axis/media
-          context: .
-          jib:
-            project: axis-media
-            type: gradle
-            args: ["--no-daemon"]
-        - image: axis/notification
-          context: .
-          jib:
-            project: axis-notification
-            type: gradle
-            args: ["--no-daemon"]
-
-  - name: native
-    build:
-      artifacts:
-        - image: axis/goal-native
-          context: .
-          custom:
-            buildCommand: ./gradlew :axis-goal:bootBuildImage --imageName=axis/goal-native
-        - image: axis/media-native
-          context: .
-          custom:
-            buildCommand: ./gradlew :axis-media:bootBuildImage --imageName=axis/media-native
-        - image: axis/notification-native
-          context: .
-          custom:
-            buildCommand: ./gradlew :axis-notification:bootBuildImage --imageName=axis/notification-native
+      artifacts: []
     deploy:
       kustomize:
         paths:
-          - k8s/overlays/native
+          - k8s/overlays/prod

@@ -1,154 +1,163 @@
 package com.axis.notification.controller;
 
+import com.axis.notification.model.dto.PageResponse;
 import com.axis.notification.model.dto.NotificationLogRequest;
 import com.axis.notification.model.dto.NotificationLogResponse;
 import com.axis.notification.model.entity.NotificationLog;
 import com.axis.notification.service.NotificationLogService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/notifications/logs")
-@RequiredArgsConstructor
+@Path("/api/notifications/logs")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RunOnVirtualThread
 @Tag(name = "Notification Logs", description = "Endpoints for managing user notification logs")
 public class NotificationLogController {
 
-    private final NotificationLogService service;
+    @Inject
+    NotificationLogService service;
 
-    @PostMapping
+    @POST
     @Operation(summary = "Create notification log", description = "Creates a new notification log entry for the current user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "201", description = "Notification created successfully"),
-            @ApiResponse(responseCode = "400", description = "Invalid request data"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "201", description = "Notification created successfully"),
+            @APIResponse(responseCode = "400", description = "Invalid request data"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<NotificationLogResponse> create(
-            @Valid @RequestBody NotificationLogRequest request) {
+    public Response create(@Valid NotificationLogRequest request) {
         log.info("Received request to create notification log with channel: {}", request.channel());
         NotificationLogResponse response = service.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
-    @GetMapping("/{id}")
+    @GET
+    @Path("/{id}")
     @Operation(summary = "Get notification by ID", description = "Retrieves a notification log entry by its ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Notification found"),
-            @ApiResponse(responseCode = "403", description = "Access denied to notification"),
-            @ApiResponse(responseCode = "404", description = "Notification not found")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Notification found"),
+            @APIResponse(responseCode = "403", description = "Access denied to notification"),
+            @APIResponse(responseCode = "404", description = "Notification not found")
     })
-    public ResponseEntity<NotificationLogResponse> findById(
-            @Parameter(description = "Notification ID") @PathVariable UUID id) {
+    public NotificationLogResponse findById(
+            @Parameter(description = "Notification ID") @PathParam("id") UUID id) {
         log.info("Received request to find notification with id: {}", id);
-        NotificationLogResponse response = service.findById(id);
-        return ResponseEntity.ok(response);
+        return service.findById(id);
     }
 
-    @GetMapping
+    @GET
     @Operation(summary = "List user notifications", description = "Retrieves all notifications for the current user with pagination")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Notifications retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<Page<NotificationLogResponse>> findAll(
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
-        log.info("Received request to find all notifications with pagination: {}", pageable);
-        Page<NotificationLogResponse> response = service.findByCurrentUser(pageable);
-        return ResponseEntity.ok(response);
+    public PageResponse<NotificationLogResponse> findAll(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
+        log.info("Received request to find all notifications with pagination: page={}, size={}", page, size);
+        return service.findByCurrentUser(page, size, sortBy, sortDirection);
     }
 
-    @GetMapping("/status/{status}")
+    @GET
+    @Path("/status/{status}")
     @Operation(summary = "List notifications by status", description = "Retrieves notifications filtered by status for the current user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Notifications retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<Page<NotificationLogResponse>> findByStatus(
-            @Parameter(description = "Notification status") @PathVariable NotificationLog.Status status,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    public PageResponse<NotificationLogResponse> findByStatus(
+            @Parameter(description = "Notification status") @PathParam("status") NotificationLog.Status status,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
         log.info("Received request to find notifications with status: {}", status);
-        Page<NotificationLogResponse> response = service.findByCurrentUserAndStatus(status, pageable);
-        return ResponseEntity.ok(response);
+        return service.findByCurrentUserAndStatus(status, page, size, sortBy, sortDirection);
     }
 
-    @GetMapping("/channel/{channel}")
+    @GET
+    @Path("/channel/{channel}")
     @Operation(summary = "List notifications by channel", description = "Retrieves notifications filtered by channel for the current user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Notifications retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Notifications retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<Page<NotificationLogResponse>> findByChannel(
-            @Parameter(description = "Notification channel") @PathVariable NotificationLog.Channel channel,
-            @PageableDefault(size = 20, sort = "createdAt") Pageable pageable) {
+    public PageResponse<NotificationLogResponse> findByChannel(
+            @Parameter(description = "Notification channel") @PathParam("channel") NotificationLog.Channel channel,
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("createdAt") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("desc") String sortDirection) {
         log.info("Received request to find notifications with channel: {}", channel);
-        Page<NotificationLogResponse> response = service.findByCurrentUserAndChannel(channel, pageable);
-        return ResponseEntity.ok(response);
+        return service.findByCurrentUserAndChannel(channel, page, size, sortBy, sortDirection);
     }
 
-    @GetMapping("/unread/count")
+    @GET
+    @Path("/unread/count")
     @Operation(summary = "Count unread notifications", description = "Returns the count of unread notifications for the current user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Count retrieved successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Count retrieved successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<Long> countUnread() {
+    public long countUnread() {
         log.info("Received request to count unread notifications");
-        long count = service.countUnread();
-        return ResponseEntity.ok(count);
+        return service.countUnread();
     }
 
-    @PatchMapping("/{id}/status")
+    @PATCH
+    @Path("/{id}/status")
     @Operation(summary = "Update notification status", description = "Updates the status of a notification (e.g., mark as read)")
-    @ApiResponses({
-            @ApiResponse(responseCode = "200", description = "Status updated successfully"),
-            @ApiResponse(responseCode = "403", description = "Access denied to notification"),
-            @ApiResponse(responseCode = "404", description = "Notification not found")
+    @APIResponses({
+            @APIResponse(responseCode = "200", description = "Status updated successfully"),
+            @APIResponse(responseCode = "403", description = "Access denied to notification"),
+            @APIResponse(responseCode = "404", description = "Notification not found")
     })
-    public ResponseEntity<NotificationLogResponse> updateStatus(
-            @Parameter(description = "Notification ID") @PathVariable UUID id,
-            @Parameter(description = "New status") @RequestParam NotificationLog.Status status) {
+    public NotificationLogResponse updateStatus(
+            @Parameter(description = "Notification ID") @PathParam("id") UUID id,
+            @Parameter(description = "New status") @QueryParam("status") NotificationLog.Status status) {
         log.info("Received request to update notification {} status to {}", id, status);
-        NotificationLogResponse response = service.updateStatus(id, status);
-        return ResponseEntity.ok(response);
+        return service.updateStatus(id, status);
     }
 
-    @DeleteMapping("/{id}")
+    @DELETE
+    @Path("/{id}")
     @Operation(summary = "Delete notification", description = "Deletes a notification by its ID")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "Notification deleted successfully"),
-            @ApiResponse(responseCode = "403", description = "Access denied to notification"),
-            @ApiResponse(responseCode = "404", description = "Notification not found")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "Notification deleted successfully"),
+            @APIResponse(responseCode = "403", description = "Access denied to notification"),
+            @APIResponse(responseCode = "404", description = "Notification not found")
     })
-    public ResponseEntity<Void> deleteById(
-            @Parameter(description = "Notification ID") @PathVariable UUID id) {
+    public Response deleteById(
+            @Parameter(description = "Notification ID") @PathParam("id") UUID id) {
         log.info("Received request to delete notification with id: {}", id);
         service.deleteById(id);
-        return ResponseEntity.noContent().build();
+        return Response.noContent().build();
     }
 
-    @DeleteMapping
+    @DELETE
     @Operation(summary = "Delete all notifications", description = "Deletes all notifications for the current user")
-    @ApiResponses({
-            @ApiResponse(responseCode = "204", description = "All notifications deleted successfully"),
-            @ApiResponse(responseCode = "401", description = "User not authenticated")
+    @APIResponses({
+            @APIResponse(responseCode = "204", description = "All notifications deleted successfully"),
+            @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public ResponseEntity<Void> deleteAll() {
+    public Response deleteAll() {
         log.info("Received request to delete all notifications for current user");
         service.deleteByCurrentUser();
-        return ResponseEntity.noContent().build();
+        return Response.noContent().build();
     }
 }

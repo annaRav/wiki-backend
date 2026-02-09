@@ -1,25 +1,28 @@
 package com.axis.goal.repository;
 
 import com.axis.goal.model.entity.CustomFieldDefinition;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
+import io.quarkus.hibernate.orm.panache.PanacheRepositoryBase;
+import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
-@Repository
-public interface CustomFieldDefinitionRepository extends JpaRepository<CustomFieldDefinition, UUID> {
+@ApplicationScoped
+public class CustomFieldDefinitionRepository implements PanacheRepositoryBase<CustomFieldDefinition, UUID> {
 
     /**
      * Find all field definitions associated with a specific goal type.
      * Useful for building dynamic forms on the frontend.
      */
-    List<CustomFieldDefinition> findByGoalTypeId(UUID goalTypeId);
+    public List<CustomFieldDefinition> findByGoalTypeId(UUID goalTypeId) {
+        return find("goalType.id", goalTypeId).list();
+    }
 
     /**
      * Find all required fields for a specific goal type.
      * Useful for server-side validation during goal creation.
      */
-    List<CustomFieldDefinition> findByGoalTypeIdAndRequiredTrue(UUID goalTypeId);
+    public List<CustomFieldDefinition> findByGoalTypeIdAndRequiredTrue(UUID goalTypeId) {
+        return find("goalType.id = ?1 and required = true", goalTypeId).list();
+    }
 }

@@ -2,102 +2,107 @@ package com.axis.goal.controller;
 
 import com.axis.goal.model.dto.GoalTypeRequest;
 import com.axis.goal.model.dto.GoalTypeResponse;
+import com.axis.goal.model.dto.PageResponse;
 import com.axis.goal.service.GoalTypeService;
-import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
-import io.swagger.v3.oas.annotations.tags.Tag;
+import io.smallrye.common.annotation.RunOnVirtualThread;
+import jakarta.inject.Inject;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import jakarta.ws.rs.*;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.web.PageableDefault;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.eclipse.microprofile.openapi.annotations.Operation;
+import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
+import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
+import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 
 import java.util.UUID;
 
 @Slf4j
-@RestController
-@RequestMapping("/api/goal-types")
-@RequiredArgsConstructor
+@Path("/api/goal-types")
+@Produces(MediaType.APPLICATION_JSON)
+@Consumes(MediaType.APPLICATION_JSON)
+@RunOnVirtualThread
 @Tag(name = "Goal Types", description = "API for configuring goal levels and custom field schemas")
 public class GoalTypeController {
 
-    private final GoalTypeService goalTypeService;
+    @Inject
+    GoalTypeService goalTypeService;
 
     @Operation(
             summary = "Create new goal type (level)",
             description = "Adds a new layer configuration with custom fields for the user"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "201", description = "Goal type successfully created"),
-            @ApiResponse(responseCode = "400", description = "Invalid input data"),
-            @ApiResponse(responseCode = "401", description = "User not authorized")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "201", description = "Goal type successfully created"),
+            @APIResponse(responseCode = "400", description = "Invalid input data"),
+            @APIResponse(responseCode = "401", description = "User not authorized")
     })
-    @PostMapping
-    public ResponseEntity<GoalTypeResponse> create(@Valid @RequestBody GoalTypeRequest request) {
+    @POST
+    public Response create(@Valid GoalTypeRequest request) {
         log.debug("Creating new goal type: {}", request.title());
         GoalTypeResponse response = goalTypeService.create(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
     @Operation(
             summary = "Update goal type",
             description = "Updates the title or custom field schema"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Goal type successfully updated"),
-            @ApiResponse(responseCode = "404", description = "Goal type not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "200", description = "Goal type successfully updated"),
+            @APIResponse(responseCode = "404", description = "Goal type not found")
     })
-    @PutMapping("/{id}")
-    public ResponseEntity<GoalTypeResponse> update(
-            @Parameter(description = "Goal type ID") @PathVariable UUID id,
-            @Valid @RequestBody GoalTypeRequest request) {
+    @PUT
+    @Path("/{id}")
+    public GoalTypeResponse update(
+            @Parameter(description = "Goal type ID") @PathParam("id") UUID id,
+            @Valid GoalTypeRequest request) {
         log.debug("Updating goal type: {}", id);
-        GoalTypeResponse response = goalTypeService.update(id, request);
-        return ResponseEntity.ok(response);
+        return goalTypeService.update(id, request);
     }
 
     @Operation(
             summary = "Get goal type by ID",
             description = "Returns the full goal type schema, including custom field definitions"
     )
-    @GetMapping("/{id}")
-    public ResponseEntity<GoalTypeResponse> findById(
-            @Parameter(description = "Goal type ID") @PathVariable UUID id) {
+    @GET
+    @Path("/{id}")
+    public GoalTypeResponse findById(
+            @Parameter(description = "Goal type ID") @PathParam("id") UUID id) {
         log.debug("Finding goal type: {}", id);
-        GoalTypeResponse response = goalTypeService.findById(id);
-        return ResponseEntity.ok(response);
+        return goalTypeService.findById(id);
     }
 
     @Operation(
             summary = "Get all goal types",
             description = "Returns a list of all configured levels for the current user"
     )
-    @GetMapping
-    public ResponseEntity<Page<GoalTypeResponse>> findAll(@PageableDefault(size = 20, sort = "levelNumber") Pageable pageable) {
+    @GET
+    public PageResponse<GoalTypeResponse> findAll(
+            @QueryParam("page") @DefaultValue("0") int page,
+            @QueryParam("size") @DefaultValue("20") int size,
+            @QueryParam("sortBy") @DefaultValue("levelNumber") String sortBy,
+            @QueryParam("sortDirection") @DefaultValue("asc") String sortDirection) {
         log.debug("Finding all goal types for user");
-        Page<GoalTypeResponse> response = goalTypeService.findAll(pageable);
-        return ResponseEntity.ok(response);
+        return goalTypeService.findAll(page, size, sortBy, sortDirection);
     }
 
     @Operation(
             summary = "Delete goal type",
             description = "Deletes the goal type configuration. Warning: this will delete all related goals!"
     )
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "204", description = "Goal type successfully deleted"),
-            @ApiResponse(responseCode = "404", description = "Goal type not found")
+    @APIResponses(value = {
+            @APIResponse(responseCode = "204", description = "Goal type successfully deleted"),
+            @APIResponse(responseCode = "404", description = "Goal type not found")
     })
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(
-            @Parameter(description = "Goal type ID") @PathVariable UUID id) {
+    @DELETE
+    @Path("/{id}")
+    public Response delete(
+            @Parameter(description = "Goal type ID") @PathParam("id") UUID id) {
         log.debug("Deleting goal type: {}", id);
         goalTypeService.delete(id);
-        return ResponseEntity.noContent().build();
+        return Response.noContent().build();
     }
 }

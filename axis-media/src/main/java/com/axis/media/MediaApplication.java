@@ -1,14 +1,12 @@
 package com.axis.media;
 
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.data.mongodb.config.EnableMongoAuditing;
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
 
-@SpringBootApplication(scanBasePackages = {"com.axis.media", "com.axis.common"})
-@EnableMongoAuditing
+@QuarkusMain
 public class MediaApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(MediaApplication.class, args);
+        Quarkus.run(args);
     }
 }

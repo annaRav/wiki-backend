@@ -10,24 +10,31 @@ import com.axis.goal.model.entity.CustomFieldDefinition;
 import com.axis.goal.model.entity.GoalType;
 import com.axis.goal.repository.CustomFieldDefinitionRepository;
 import com.axis.goal.repository.GoalTypeRepository;
-import lombok.RequiredArgsConstructor;
+import com.axis.goal.service.CustomFieldDefinitionService;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
+import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class CustomFieldDefinitionServicePg implements com.axis.goal.service.CustomFieldDefinitionService {
+@ApplicationScoped
+public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionService {
 
-    private final CustomFieldDefinitionRepository definitionRepository;
-    private final GoalTypeRepository goalTypeRepository;
-    private final CustomFieldDefinitionMapper definitionMapper;
+    @Inject
+    CustomFieldDefinitionRepository definitionRepository;
+
+    @Inject
+    GoalTypeRepository goalTypeRepository;
+
+    @Inject
+    CustomFieldDefinitionMapper definitionMapper;
+
+    @Inject
+    SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -42,10 +49,10 @@ public class CustomFieldDefinitionServicePg implements com.axis.goal.service.Cus
         CustomFieldDefinition definition = definitionMapper.toEntity(request);
         definition.setGoalType(goalType);
 
-        CustomFieldDefinition saved = definitionRepository.save(definition);
-        log.info("Created custom field definition with id: {} for goal type: {}", saved.getId(), goalTypeId);
+        definitionRepository.persist(definition);
+        log.info("Created custom field definition with id: {} for goal type: {}", definition.getId(), goalTypeId);
 
-        return definitionMapper.toResponse(saved);
+        return definitionMapper.toResponse(definition);
     }
 
     @Override
@@ -54,12 +61,12 @@ public class CustomFieldDefinitionServicePg implements com.axis.goal.service.Cus
         UUID userId = getCurrentUserId();
         log.debug("Updating custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findById(id)
+        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
 
         // Verify goal type belongs to user
         if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to modify this custom field", HttpStatus.FORBIDDEN);
+            throw new BusinessException("You don't have permission to modify this custom field", Response.Status.FORBIDDEN);
         }
 
         definitionMapper.updateEntity(request, definition);
@@ -73,12 +80,12 @@ public class CustomFieldDefinitionServicePg implements com.axis.goal.service.Cus
         UUID userId = getCurrentUserId();
         log.debug("Finding custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findById(id)
+        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
 
         // Verify goal type belongs to user
         if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to view this custom field", HttpStatus.FORBIDDEN);
+            throw new BusinessException("You don't have permission to view this custom field", Response.Status.FORBIDDEN);
         }
 
         return definitionMapper.toResponse(definition);
@@ -105,12 +112,12 @@ public class CustomFieldDefinitionServicePg implements com.axis.goal.service.Cus
         UUID userId = getCurrentUserId();
         log.debug("Deleting custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findById(id)
+        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
 
         // Verify goal type belongs to user
         if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to delete this custom field", HttpStatus.FORBIDDEN);
+            throw new BusinessException("You don't have permission to delete this custom field", Response.Status.FORBIDDEN);
         }
 
         definitionRepository.delete(definition);
@@ -118,7 +125,7 @@ public class CustomFieldDefinitionServicePg implements com.axis.goal.service.Cus
     }
 
     private UUID getCurrentUserId() {
-        return SecurityUtils.getCurrentUserIdAsUUID()
+        return securityUtils.getCurrentUserIdAsUUID()
                 .orElseThrow(() -> new IllegalStateException("User is not authenticated"));
     }
 }

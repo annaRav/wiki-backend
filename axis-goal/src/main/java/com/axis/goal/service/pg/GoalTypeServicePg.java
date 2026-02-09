@@ -5,26 +5,32 @@ import com.axis.common.security.SecurityUtils;
 import com.axis.goal.mapper.GoalTypeMapper;
 import com.axis.goal.model.dto.GoalTypeRequest;
 import com.axis.goal.model.dto.GoalTypeResponse;
+import com.axis.goal.model.dto.PageResponse;
 import com.axis.goal.model.entity.GoalType;
 import com.axis.goal.repository.GoalTypeRepository;
 import com.axis.goal.service.GoalTypeService;
-import lombok.RequiredArgsConstructor;
+import io.quarkus.panache.common.Page;
+import io.quarkus.panache.common.Sort;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Service
-@RequiredArgsConstructor
-@Transactional(readOnly = true)
+@ApplicationScoped
 public class GoalTypeServicePg implements GoalTypeService {
 
-    private final GoalTypeRepository goalTypeRepository;
-    private final GoalTypeMapper goalTypeMapper;
+    @Inject
+    GoalTypeRepository goalTypeRepository;
+
+    @Inject
+    GoalTypeMapper goalTypeMapper;
+
+    @Inject
+    SecurityUtils securityUtils;
 
     @Override
     @Transactional
@@ -44,11 +50,11 @@ public class GoalTypeServicePg implements GoalTypeService {
             goalType.getCustomFields().forEach(field -> field.setGoalType(goalType));
         }
 
-        GoalType saved = goalTypeRepository.save(goalType);
+        goalTypeRepository.persist(goalType);
         log.info("Goal type created with ID: {} and level {} for user: {}",
-                 saved.getId(), saved.getLevelNumber(), userId);
+                 goalType.getId(), goalType.getLevelNumber(), userId);
 
-        return goalTypeMapper.toResponse(saved);
+        return goalTypeMapper.toResponse(goalType);
     }
 
     @Override
@@ -82,12 +88,19 @@ public class GoalTypeServicePg implements GoalTypeService {
     }
 
     @Override
-    public Page<GoalTypeResponse> findAll(Pageable pageable) {
+    public PageResponse<GoalTypeResponse> findAll(int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
         log.debug("Getting all goal types for user: {}", userId);
 
-        return goalTypeRepository.findByUserId(userId, pageable)
-                .map(goalTypeMapper::toResponse);
+        Sort sort = createSort(sortBy, sortDirection);
+        List<GoalType> goalTypes = goalTypeRepository.findByUserId(userId, Page.of(page, size), sort);
+        long totalElements = goalTypeRepository.countByUserId(userId);
+
+        List<GoalTypeResponse> responses = goalTypes.stream()
+                .map(goalTypeMapper::toResponse)
+                .toList();
+
+        return PageResponse.of(responses, totalElements, page, size);
     }
 
     @Override
@@ -114,13 +127,23 @@ public class GoalTypeServicePg implements GoalTypeService {
         if (!followingGoalTypes.isEmpty()) {
             log.debug("Recalculating levels for {} following goal types", followingGoalTypes.size());
             followingGoalTypes.forEach(gt -> gt.setLevelNumber(gt.getLevelNumber() - 1));
-            goalTypeRepository.saveAll(followingGoalTypes);
+            // Panache doesn't have saveAll, entities are automatically persisted in transaction
             log.info("Levels recalculated for {} goal types", followingGoalTypes.size());
         }
     }
 
     private UUID getCurrentUserId() {
-        return SecurityUtils.getCurrentUserIdAsUUID()
+        return securityUtils.getCurrentUserIdAsUUID()
                 .orElseThrow(() -> new IllegalStateException("User not authorized"));
+    }
+
+    private Sort createSort(String sortBy, String sortDirection) {
+        if (sortBy == null || sortBy.isEmpty()) {
+            sortBy = "levelNumber";
+        }
+        Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
+            ? Sort.Direction.Ascending
+            : Sort.Direction.Descending;
+        return Sort.by(sortBy, direction);
     }
 }

@@ -1,106 +1,103 @@
 package com.axis.common.security;
 
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.jwt.Jwt;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.inject.Inject;
+import org.eclipse.microprofile.jwt.JsonWebToken;
 
-import java.util.Collection;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
- * Utility class for accessing security context information
+ * Utility class for accessing security context information.
+ * Uses MicroProfile JWT API - compatible with Quarkus.
  */
+@ApplicationScoped
 public class SecurityUtils {
 
-    private SecurityUtils() {
-        // Utility class
-    }
+    @Inject
+    JsonWebToken jwt;
 
     /**
      * Gets the current authenticated user's ID from JWT sub claim
      */
-    public static Optional<String> getCurrentUserId() {
-        return getCurrentJwt()
-                .map(jwt -> jwt.getClaimAsString("sub"));
+    public Optional<String> getCurrentUserId() {
+        if (jwt == null || jwt.getSubject() == null) {
+            return Optional.empty();
+        }
+        return Optional.of(jwt.getSubject());
     }
 
     /**
      * Gets the current authenticated user's ID as UUID
      */
-    public static Optional<UUID> getCurrentUserIdAsUUID() {
-        return getCurrentUserId()
-                .map(UUID::fromString);
+    public Optional<UUID> getCurrentUserIdAsUUID() {
+        return getCurrentUserId().map(UUID::fromString);
     }
 
     /**
      * Gets the current authenticated user's email from JWT
      */
-    public static Optional<String> getCurrentUserEmail() {
-        return getCurrentJwt()
-                .map(jwt -> jwt.getClaimAsString("email"));
+    public Optional<String> getCurrentUserEmail() {
+        if (jwt == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(jwt.getClaim("email"));
     }
 
     /**
      * Gets the current authenticated user's preferred username
      */
-    public static Optional<String> getCurrentUsername() {
-        return getCurrentJwt()
-                .map(jwt -> jwt.getClaimAsString("preferred_username"));
+    public Optional<String> getCurrentUsername() {
+        if (jwt == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(jwt.getClaim("preferred_username"));
     }
 
     /**
-     * Gets the current JWT token
+     * Gets all groups/roles for the current user
      */
-    public static Optional<Jwt> getCurrentJwt() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication instanceof JwtAuthenticationToken jwtAuth) {
-            return Optional.of(jwtAuth.getToken());
+    public Set<String> getCurrentUserGroups() {
+        if (jwt == null) {
+            return Set.of();
         }
-
-        return Optional.empty();
-    }
-
-    /**
-     * Gets all authorities/roles for the current user
-     */
-    public static Collection<String> getCurrentUserAuthorities() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null) {
-            return java.util.Collections.emptyList();
-        }
-
-        return authentication.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .collect(Collectors.toList());
+        return jwt.getGroups();
     }
 
     /**
      * Checks if current user has a specific role
      */
-    public static boolean hasRole(String role) {
-        String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-        return getCurrentUserAuthorities().contains(roleWithPrefix);
+    public boolean hasRole(String role) {
+        if (jwt == null) {
+            return false;
+        }
+        return jwt.getGroups().contains(role);
     }
 
     /**
      * Checks if current user has any of the specified roles
      */
-    public static boolean hasAnyRole(String... roles) {
-        Collection<String> authorities = getCurrentUserAuthorities();
-
+    public boolean hasAnyRole(String... roles) {
+        if (jwt == null) {
+            return false;
+        }
+        Set<String> userGroups = jwt.getGroups();
         for (String role : roles) {
-            String roleWithPrefix = role.startsWith("ROLE_") ? role : "ROLE_" + role;
-            if (authorities.contains(roleWithPrefix)) {
+            if (userGroups.contains(role)) {
                 return true;
             }
         }
-
         return false;
+    }
+
+    /**
+     * Gets a custom claim from the JWT
+     */
+    public <T> Optional<T> getClaim(String claimName) {
+        if (jwt == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(jwt.getClaim(claimName));
     }
 }

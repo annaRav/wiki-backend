@@ -1,10 +1,9 @@
 package com.axis.notification.service;
 
+import com.axis.notification.model.dto.PageResponse;
 import com.axis.notification.model.dto.NotificationLogRequest;
 import com.axis.notification.model.dto.NotificationLogResponse;
 import com.axis.notification.model.entity.NotificationLog;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 
 import java.util.UUID;
 
@@ -23,17 +22,17 @@ public interface NotificationLogService {
     /**
      * Find all notifications for the current user
      */
-    Page<NotificationLogResponse> findByCurrentUser(Pageable pageable);
+    PageResponse<NotificationLogResponse> findByCurrentUser(int page, int size, String sortBy, String sortDirection);
 
     /**
      * Find notifications by current user and status
      */
-    Page<NotificationLogResponse> findByCurrentUserAndStatus(NotificationLog.Status status, Pageable pageable);
+    PageResponse<NotificationLogResponse> findByCurrentUserAndStatus(NotificationLog.Status status, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Find notifications by current user and channel
      */
-    Page<NotificationLogResponse> findByCurrentUserAndChannel(NotificationLog.Channel channel, Pageable pageable);
+    PageResponse<NotificationLogResponse> findByCurrentUserAndChannel(NotificationLog.Channel channel, int page, int size, String sortBy, String sortDirection);
 
     /**
      * Update notification status (e.g., mark as read)

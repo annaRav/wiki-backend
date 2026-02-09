@@ -1,6 +1,6 @@
 package com.axis.goal.model.dto;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 import java.util.UUID;

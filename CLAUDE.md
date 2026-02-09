@@ -4,28 +4,44 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Axis Backend is a microservices-based life goals planning platform (similar to Trello) built with Spring Boot 3.4, Spring Cloud, and Keycloak authentication. The system helps users organize and track long-term, medium-term, and short-term life goals using a board-based interface. The platform runs on Kubernetes (Minikube) and uses Skaffold for local development.
+Axis Backend is a microservices-based life goals planning platform (similar to Trello) built with Quarkus 3.x and Keycloak authentication. The system helps users organize and track long-term, medium-term, and short-term life goals using a board-based interface. The platform runs on Kubernetes (Minikube) and uses Skaffold for local development.
 
 ### Microservices
 
-- **axis-gateway** (Port 8080): Spring Cloud Gateway, WebFlux-based reactive API gateway with OAuth2 JWT resource server
 - **axis-goal** (Port 8081): Goals management service with PostgreSQL storage for long/medium/short-term goals, goal types, and custom fields
 - **axis-notification** (Port 8082): Notification management service with PostgreSQL storage for notification logs, user settings, and templates
 - **axis-media** (Port 8083): Media file management service with MongoDB storage
 - **axis-common**: Shared library containing security utilities, exception handling, and DTOs
+- **Gateway**: Nginx Ingress Controller handles routing (no separate gateway service)
 
 ### Technology Stack
 
 - Java 21 (use modern features: records, pattern matching, sealed classes)
-- Spring Boot 3.4.1
-- Spring Cloud 2024.0.0
+- Quarkus 3.x (supersonic subatomic Java framework)
 - GraalVM Native Image (for CI/CD production builds)
 - Keycloak 24.0 (realm: `axis`, client: `axis-backend`)
-- PostgreSQL (separate instances for Keycloak and future application data)
+- PostgreSQL (separate instances for Keycloak and application data)
 - MongoDB 7
 - RabbitMQ 3
 - Redis 7
 - Kubernetes (Minikube) with Skaffold
+- Nginx Ingress Controller for API routing
+
+### Key Quarkus Extensions Used
+
+All services use these core extensions:
+- **quarkus-rest** (JAX-RS implementation, replaces Spring MVC)
+- **quarkus-rest-jackson** (JSON serialization)
+- **quarkus-hibernate-orm-panache** (Simplified JPA with Panache patterns)
+- **quarkus-jdbc-postgresql** (PostgreSQL driver)
+- **quarkus-liquibase** (Database migrations)
+- **quarkus-oidc** (Keycloak integration)
+- **quarkus-smallrye-jwt** (JWT processing)
+- **quarkus-smallrye-health** (Health checks at `/actuator/health`)
+- **quarkus-micrometer-registry-prometheus** (Metrics at `/actuator/prometheus`)
+- **quarkus-smallrye-openapi** (OpenAPI/Swagger documentation)
+- **quarkus-hibernate-validator** (Bean Validation)
+- **quarkus-container-image-jib** (JVM Docker image building)
 
 ## Domain Model
 
@@ -42,55 +58,14 @@ Axis Backend is a microservices-based life goals planning platform (similar to T
 
 ## Build and Development Commands
 
-### Hybrid Build Strategy
+### Two-Mode Development Strategy
 
-The project uses a **hybrid build approach** optimized for both development speed and production performance:
+The project uses exactly **2 modes** via a single `skaffold.yaml`:
 
-- **Local Development (JVM)**: Fast iteration with Skaffold, quick rebuilds, hot-reload support
-- **CI/CD Production (Native)**: GraalVM native images for faster startup, lower memory, and smaller containers
+- **Dev** (`skaffold dev`): Builds JVM images locally in Minikube, deploys everything (infra + services), Skaffold rebuilds on file changes
+- **Prod** (`skaffold run -p prod`): Pulls native images from GitHub Container Registry (ghcr.io), no local builds
 
-**Rationale:**
-- Native compilation takes 5-10x longer than JVM builds
-- Local dev benefits from JIT optimization for long-running services
-- Production benefits from instant startup and reduced resource usage
-- Best of both worlds: fast iteration + optimal deployment
-
-### Building (JVM - Local Development)
-
-```bash
-# Build all services (JVM)
-./gradlew clean build
-
-# Build specific service (JVM)
-./gradlew :axis-media:build
-
-# Build Docker images (uses Jib for JVM-based images)
-./gradlew jibDockerBuild
-```
-
-### Building Native Images (CI/CD Production Only)
-
-**IMPORTANT:** This project uses Spring Boot buildpacks exclusively for native image compilation. The `org.graalvm.buildtools.native` Gradle plugin is NOT used and should NOT be added to service build.gradle files, as it interferes with Spring AOT processing.
-
-```bash
-# Build native Docker image using Spring Boot buildpacks
-# This is done automatically in CI/CD (GitHub Actions)
-./gradlew :axis-gateway:bootBuildImage
-./gradlew :axis-goal:bootBuildImage
-./gradlew :axis-notification:bootBuildImage
-./gradlew :axis-media:bootBuildImage
-```
-
-**Key Points:**
-- Native builds take 5-10 minutes per service
-- Spring Boot buildpacks handle all native image configuration
-- Spring AOT processing is automatic (no GraalVM plugin needed)
-- Use JVM builds for local development
-- Let CI/CD handle native image builds
-
-### Local Development with Skaffold
-
-Skaffold uses **Kustomize overlays** to support both JVM and native image deployments with optimized resource configurations.
+### Local Development (Recommended)
 
 ```bash
 # Start Minikube (if not running)
@@ -99,59 +74,85 @@ minikube start
 # Point Docker CLI to Minikube's Docker daemon
 eval $(minikube docker-env)
 
-# Deploy with JVM images (default, fast builds, hot-reload)
+# Build JVM images, deploy all infra + services, port-forward everything
 skaffold dev
+```
 
-# Deploy JVM images without watching
-skaffold run
+Skaffold will build 3 JVM Docker images, deploy all infrastructure (PostgreSQL, Keycloak, MongoDB, RabbitMQ, Redis) and all services, and set up port-forwarding. On code changes, Skaffold automatically rebuilds and redeploys the affected service.
 
-# Deploy with native images (slow builds, optimized runtime)
-skaffold run -p native
+**Access Points:**
+- API Gateway: http://localhost:8080
+- Keycloak: http://localhost:8180
+- RabbitMQ Management: http://localhost:15672
+- PostgreSQL: localhost:5433
+- MongoDB: localhost:27017
+- Redis: localhost:6379
+
+### Testing Production Images
+
+Pull and test production-ready native images from GitHub Container Registry:
+
+```bash
+# Deploy native images from GHCR (no local builds)
+skaffold run -p prod
 
 # Delete deployment
-skaffold delete
+skaffold delete -p prod
+```
+
+This pulls pre-built images from `ghcr.io/annarav/axis-*:latest` - no local compilation needed!
+
+### Building Native Images (CI/CD Only)
+
+**IMPORTANT:** Native images are built automatically in GitHub Actions. Do NOT build them locally unless debugging native compilation issues.
+
+```bash
+# Build native executable (takes 5-10 minutes per service!)
+./gradlew :axis-goal:build -Dquarkus.package.type=native -Dquarkus.native.container-build=true
 ```
 
 ### Kustomize Structure
 
-The project uses Kustomize overlays for different deployment scenarios:
+The project uses a **simplified Kustomize structure** with 2 overlays:
 
 ```
 k8s/
 ├── base/                       # Base manifests (all services and infrastructure)
 │   ├── kustomization.yaml
 │   ├── namespace.yaml
-│   ├── axis-gateway.yaml       # Service deployments
+│   ├── gateway-api.yaml        # Nginx Ingress routing
 │   ├── axis-goal.yaml
 │   ├── axis-media.yaml
 │   ├── axis-notification.yaml
 │   ├── infrastructure/         # Keycloak, PostgreSQL, MongoDB, RabbitMQ, Redis
 │   └── config/                 # ConfigMaps and Secrets
 └── overlays/
-    ├── jvm/                    # JVM-optimized (default for local dev)
+    ├── dev/                    # For local development (adds env label only)
     │   └── kustomization.yaml
-    └── native/                 # Native image-optimized (CI/CD)
+    └── prod/                   # For production (GHCR images + native resources)
         ├── kustomization.yaml
-        ├── *-image.yaml        # Native image names
-        └── *-resources.yaml    # Reduced memory/CPU
+        └── prod-patches.yaml   # Native resources (low memory/fast startup)
 ```
 
 **Resource Comparison:**
 
 | Configuration | Memory (req/limit) | Startup (liveness/readiness) | Use Case |
 |--------------|-------------------|------------------------------|----------|
-| **JVM** | 256Mi / 512Mi | 15-45s / 15-30s | Local development, fast iteration |
-| **Native** | 64Mi / 128Mi | 10-15s / 5-10s | Production deployment, resource-constrained |
+| **Dev (JVM)** | 256Mi / 512Mi | 45s / 30s | Local development with JVM images |
+| **Prod (Native)** | 64Mi / 128Mi | 15s / 10s | Production from GitHub Container Registry |
 
 **Deployment Commands:**
 
 ```bash
-# Deploy using Kustomize directly
-kubectl apply -k k8s/overlays/jvm      # JVM images
-kubectl apply -k k8s/overlays/native   # Native images
+# Dev: build JVM images locally, deploy everything
+skaffold dev
 
-# Delete using Kustomize
-kubectl delete -k k8s/overlays/jvm
+# Prod: pull native images from GHCR, deploy everything
+skaffold run -p prod
+
+# Delete deployment
+skaffold delete          # dev
+skaffold delete -p prod  # prod
 ```
 
 ### Kubernetes Operations
@@ -180,23 +181,25 @@ kubectl port-forward -n axis service/axis-gateway 8080:8080
 All microservices follow strict layered architecture:
 
 ```
-Entity/Domain -> Repository -> Service (Interface + Impl) -> Controller -> DTOs
+Entity/Domain -> Repository -> Service (Interface + Impl) -> Resource (REST endpoint) -> DTOs
 ```
 
 **Critical conventions:**
 - All entities MUST use `UUID` as primary key with `@GeneratedValue(strategy = GenerationType.UUID)`
-- Services MUST have interface first, then implementation annotated with `@Service` and `@Transactional`
-- Controllers MUST use DTOs for request/response, NEVER expose entities directly
-- Use MapStruct for entity-DTO conversions with `@Mapper(componentModel = "spring")`
+- Services MUST have interface first, then implementation annotated with `@ApplicationScoped` and `@Transactional`
+- REST Resources use JAX-RS annotations (`@Path`, `@GET`, `@POST`, etc.) not Spring MVC
+- Resources MUST use DTOs for request/response, NEVER expose entities directly
+- Use MapStruct for entity-DTO conversions with `@Mapper(componentModel = "jakarta")`
+- Use Panache repositories for simplified data access (optional but recommended)
 
 ### Authentication and Security
 
 The platform uses Keycloak for OAuth2/OIDC authentication:
 
-- **Gateway**: Uses WebFlux reactive security with JWT resource server
-- **Services**: Standard Spring Security with JWT resource server
-- **Custom JWT converter**: `JwtAuthenticationConverter` in axis-common extracts user information from JWT tokens
-- **Security utilities**: `SecurityUtils` class provides helper methods to extract user ID, email, and username from JWT
+- **Routing**: Nginx Ingress Controller handles routing to services
+- **Services**: Quarkus OIDC extension (`quarkus-oidc`) with JWT resource server
+- **Security utilities**: `SecurityUtils` class in axis-common provides helper methods to extract user information from JWT
+- **Exception handling**: `ExceptionMappers` class provides JAX-RS exception mappers for consistent error responses
 
 Access current user information:
 ```java
@@ -205,86 +208,131 @@ String email = SecurityUtils.getCurrentUserEmail().orElse(null);
 String username = SecurityUtils.getCurrentUsername().orElse(null);
 ```
 
+**Securing endpoints:**
+```java
+@Path("/api/goals")
+@Authenticated  // Require authentication for all endpoints in this resource
+public class GoalResource {
+
+    @GET
+    @RolesAllowed("user")  // Specific role requirement
+    public List<GoalResponse> list() { ... }
+
+    @POST
+    @PermitAll  // Allow all authenticated users
+    public GoalResponse create(GoalRequest request) { ... }
+}
+```
+
 ### Exception Handling
 
-Global exception handling is provided in axis-common:
-- `GlobalExceptionHandler` with `@RestControllerAdvice` handles all exceptions
-- `ResourceNotFoundException`: Returns 404 with standard `ApiError` response
+Global exception handling uses JAX-RS ExceptionMappers:
+- `ExceptionMappers` class with `@Provider` annotated methods handles all exceptions
+- `ResourceNotFoundException`: Returns 404 with standard error response
 - `BusinessException`: Returns configurable HTTP status with error details
-- Validation errors: Automatically converted to structured field-level errors
+- Validation errors: Bean Validation exceptions automatically converted to structured field-level errors
 - Security exceptions: 401 for authentication, 403 for authorization failures
+
+**Example ExceptionMapper:**
+```java
+@Provider
+public class ExceptionMappers {
+
+    @ServerExceptionMapper
+    public RestResponse<ErrorResponse> mapResourceNotFound(ResourceNotFoundException ex) {
+        return RestResponse.status(Response.Status.NOT_FOUND,
+            new ErrorResponse(ex.getMessage()));
+    }
+
+    @ServerExceptionMapper
+    public RestResponse<ErrorResponse> mapBusinessException(BusinessException ex) {
+        return RestResponse.status(ex.getStatus(),
+            new ErrorResponse(ex.getMessage()));
+    }
+}
+```
 
 ### Database Migrations
 
-Liquibase is used for database migrations:
+Liquibase is used for database migrations via `quarkus-liquibase` extension:
 - Location: `src/main/resources/db/changelog/`
 - Format: YAML-based changelogs (e.g., `db.changelog-master.yaml`)
-- JPA configuration: `ddl-auto: validate` to prevent schema auto-generation
+- Configuration: `quarkus.liquibase.migrate-at-start=true` for automatic migrations
 - Run migrations: Automatic on application startup
+- Schema validation: Hibernate should be set to `validate` only
 - Liquibase provides better support for complex migrations and rollbacks
 
 ### Shared Library (axis-common)
 
 Contains:
-- **Security**: `JwtAuthenticationConverter`, `SecurityUtils`
-- **Exceptions**: `GlobalExceptionHandler`, `ResourceNotFoundException`, `BusinessException`
-- **DTOs**: `ApiError` for standardized error responses
+- **Security**: `SecurityUtils` for extracting user information from JWT
+- **Exceptions**: `ExceptionMappers` (JAX-RS providers), `ResourceNotFoundException`, `BusinessException`
+- **DTOs**: Error response DTOs for standardized error responses
 
-All services depend on axis-common and inherit these capabilities.
+All services depend on axis-common and inherit these capabilities. The library is compatible with Quarkus CDI and uses Jakarta EE annotations.
 
 ## Service Configuration Patterns
 
-### Standard application.yaml structure
+### Standard application.properties structure
 
-```yaml
-server:
-  port: 8083
+Quarkus uses `application.properties` by default (not YAML):
 
-spring:
-  application:
-    name: service-name
-  datasource:
-    url: jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
-  jpa:
-    hibernate:
-      ddl-auto: validate  # ALWAYS use validate
-  liquibase:
-    enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.yaml
-    default-schema: public  # Each service has separate database
-  security:
-    oauth2:
-      resourceserver:
-        jwt:
-          jwk-set-uri: ${KEYCLOAK_JWK_SET_URI}
+```properties
+# HTTP Configuration
+quarkus.http.port=8081
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: health,info,metrics,prometheus
-  endpoint:
-    health:
-      show-details: always
+# Application Name
+quarkus.application.name=axis-goal
+
+# Database Configuration
+quarkus.datasource.db-kind=postgresql
+quarkus.datasource.jdbc.url=jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:goal}
+quarkus.datasource.username=${DB_USERNAME:goal_user}
+quarkus.datasource.password=${DB_PASSWORD:goal_password}
+
+# Hibernate ORM
+quarkus.hibernate-orm.database.generation=validate
+quarkus.hibernate-orm.log.sql=false
+
+# Liquibase
+quarkus.liquibase.migrate-at-start=true
+quarkus.liquibase.change-log=db/changelog/db.changelog-master.yaml
+
+# OIDC (Keycloak)
+quarkus.oidc.auth-server-url=${KEYCLOAK_ISSUER_URI:http://keycloak:8080/realms/axis}
+quarkus.oidc.client-id=axis-backend
+quarkus.oidc.credentials.secret=${KEYCLOAK_CLIENT_SECRET:secret}
+
+# SmallRye Health
+quarkus.smallrye-health.root-path=/actuator/health
+
+# Micrometer Prometheus
+quarkus.micrometer.export.prometheus.path=/actuator/prometheus
+
+# OpenAPI / Swagger
+quarkus.smallrye-openapi.path=/swagger
+quarkus.swagger-ui.always-include=true
+
+# Dev Mode (only active in dev profile)
+%dev.quarkus.log.console.level=DEBUG
 ```
 
 ### Environment Variables
 
 Services expect these environment variables (provided via ConfigMaps/Secrets):
 - `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USERNAME`, `DB_PASSWORD`
-- `KEYCLOAK_JWK_SET_URI`: Defaults to `http://keycloak:8080/realms/axis/protocol/openid-connect/certs`
+- `KEYCLOAK_ISSUER_URI`: Defaults to `http://keycloak:8080/realms/axis`
+- `KEYCLOAK_CLIENT_SECRET`: Client secret for OIDC (defaults to `secret`)
 
 ## Kubernetes Deployment
 
 ### Deployment Strategy
 
-The project uses **Kustomize overlays** to manage different deployment configurations:
-- **JVM overlay** (`k8s/overlays/jvm`): Default for local development with Skaffold
-- **Native overlay** (`k8s/overlays/native`): For production CI/CD with reduced resources
+The project uses **simplified Kustomize overlays** with 2 configurations:
+- **Dev overlay** (`k8s/overlays/dev`): Uses base manifests with JVM resource settings (no patches needed)
+- **Prod overlay** (`k8s/overlays/prod`): Native images from GitHub Container Registry with reduced resource limits
 
-All deployments use the same base manifests (`k8s/base/`) with environment-specific patches applied by Kustomize.
+All deployments use the same base manifests (`k8s/base/`). Dev overlay adds only an environment label. Prod overlay applies resource patches and swaps images to ghcr.io.
 
 ### Namespace
 
@@ -311,9 +359,9 @@ Realm `axis` is auto-imported with:
 - `rabbitmq`: Message broker
 - `redis`: Caching
 
-## Gateway Routing
+## API Routing
 
-Gateway routes requests based on path patterns:
+Nginx Ingress Controller routes requests based on path patterns:
 
 ```yaml
 - Path=/api/goals/**
@@ -329,7 +377,7 @@ Gateway routes requests based on path patterns:
   -> http://axis-media:8083
 ```
 
-All routes require valid JWT authentication except `/actuator/**`.
+Authentication is handled by each service using Quarkus OIDC extension. Health and metrics endpoints (`/actuator/**`) are typically public or secured at the infrastructure level.
 
 ## Notification Service (axis-notification)
 
@@ -396,25 +444,33 @@ The notification service manages user notifications and notification preferences
 ## Code Quality Standards
 
 - **Naming**: Follow Java conventions (PascalCase for classes, camelCase for methods/fields)
-- **Lombok**: Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor` to reduce boilerplate
-- **Logging**: Use SLF4J with `@Slf4j`, appropriate log levels (DEBUG for SQL, INFO for business events)
+- **Lombok**: Use `@Data`, `@Builder`, `@NoArgsConstructor`, `@AllArgsConstructor` to reduce boilerplate (works with Quarkus)
+- **Logging**: Use JBoss Logging with `@Slf4j` or Quarkus `Log` class, appropriate log levels
 - **Null Safety**: Return `Optional<T>` for potentially null values
 - **Immutability**: Prefer records for DTOs
-- **Dependency Injection**: Constructor injection only (no `@Autowired` fields)
+- **Dependency Injection**: Use `@Inject` for constructor injection (not `@Autowired`)
+- **Scoping**: Use `@ApplicationScoped` for services, `@RequestScoped` for request-specific beans
 - **Validation**: Use Bean Validation annotations (`@NotNull`, `@NotBlank`, `@Size`) on DTOs
-- **OpenAPI**: Document all endpoints with `@Operation`, `@ApiResponse`, `@Tag`
+- **OpenAPI**: Use MicroProfile OpenAPI annotations (`@Operation`, `@APIResponse`, `@Tag`)
+- **REST Resources**: Use JAX-RS annotations (`@Path`, `@GET`, `@POST`, `@Produces`, `@Consumes`)
+- **Transactions**: Use `@Transactional` on service methods that modify data
 
 ## Common Pitfalls
 
-1. **WebFlux vs WebMVC**: Gateway uses WebFlux (reactive), other services use standard WebMVC. Don't mix dependencies.
-2. **Primary Keys**: Always use UUID, never Long/Integer for entity IDs
-3. **Service Layer**: Always create interface first, then implementation
-4. **Entity Exposure**: Never return entities from controllers, always use DTOs
-5. **JPA ddl-auto**: Always use `validate`, never `update` or `create-drop`
-6. **Keycloak URL**: Use internal service name `http://keycloak:8080` not `localhost:8180` in configs
-7. **Namespace**: Always use `axis` namespace, not `default`
-8. **GraalVM Plugin**: DO NOT add `org.graalvm.buildtools.native` plugin to services. Use Spring Boot buildpacks (`bootBuildImage`) exclusively. The GraalVM plugin interferes with Spring AOT processing.
-9. **Spring AOT**: Never disable AOT processing (`processAot` task) - it's required for native images. Spring Boot buildpacks handle it automatically.
+1. **JAX-RS not Spring MVC**: Use `@Path`, `@GET`, `@POST` not `@RequestMapping`, `@GetMapping`
+2. **Dependency Injection**: Use `@Inject` not `@Autowired`, and `@ApplicationScoped` not `@Service`
+3. **Primary Keys**: Always use UUID, never Long/Integer for entity IDs
+4. **Service Layer**: Always create interface first, then implementation with `@ApplicationScoped`
+5. **Entity Exposure**: Never return entities from REST resources, always use DTOs
+6. **Hibernate Generation**: Always use `validate`, never `update` or `create-drop` in production
+7. **Keycloak URL**: Use internal service name `http://keycloak:8080` not `localhost:8180` in configs
+8. **Namespace**: Always use `axis` namespace, not `default`
+9. **Native Builds**: DO NOT build native images locally - they take 5-10 minutes. Let CI/CD handle it.
+10. **Dev Mode**: Use `skaffold dev` for full-stack development (builds JVM images + deploys everything)
+11. **Configuration**: Use `application.properties` not `application.yaml` (Quarkus convention)
+12. **MapStruct**: Use `componentModel = "jakarta"` not `"spring"` for Quarkus CDI compatibility
+13. **Transactions**: Use `@Transactional` from `jakarta.transaction`, not Spring's version
+14. **REST Client**: Use Quarkus REST Client (`@RegisterRestClient`) not Spring's RestTemplate or WebClient
 
 ## Maintaining This Documentation
 
@@ -437,8 +493,16 @@ While CLAUDE.md is the primary file, keep these files synchronized as the projec
 
 | File | Update When | Purpose |
 |------|-------------|---------|
+| **QUARKUS-DEV-WORKFLOW.md** | Workflow changes, new profiles, troubleshooting | Detailed Quarkus development guide with examples and CI/CD setup |
 | **CHANGELOG.md** | After completing features, fixes, or releases | Track all notable changes following Keep a Changelog format |
 | **.claudeignore** | New build dirs, generated code, large binary directories | Excludes files from Claude's context for better performance |
 | **README.md** | Major project changes, setup instructions | General project documentation (Claude reads this too) |
 | **.mcp.json** | New MCP servers for databases/tools | External tool integrations (e.g., postgres-app) |
+
+## Additional Resources
+
+- 📚 **[QUARKUS-DEV-WORKFLOW.md](./QUARKUS-DEV-WORKFLOW.md)** - Comprehensive guide to Quarkus development workflow
+- 🔗 [Quarkus Guides](https://quarkus.io/guides/) - Official Quarkus documentation
+- 🔗 [Quarkus Extensions](https://quarkus.io/extensions/) - Available Quarkus extensions
+- 🔗 [Panache Guide](https://quarkus.io/guides/hibernate-orm-panache) - Simplified JPA with Panache
 
