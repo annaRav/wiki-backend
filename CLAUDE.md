@@ -41,7 +41,6 @@ All services use these core extensions:
 - **quarkus-micrometer-registry-prometheus** (Metrics at `/actuator/prometheus`)
 - **quarkus-smallrye-openapi** (OpenAPI/Swagger documentation)
 - **quarkus-hibernate-validator** (Bean Validation)
-- **quarkus-container-image-jib** (JVM Docker image building)
 
 ## Domain Model
 

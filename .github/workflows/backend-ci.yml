@@ -45,13 +45,13 @@ jobs:
         run: ./gradlew clean
 
       - name: Build native executable (axis-goal)
-        run: ./gradlew :axis-goal:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true -Dquarkus.container-image.build=false
+        run: ./gradlew :axis-goal:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 
       - name: Build native executable (axis-notification)
-        run: ./gradlew :axis-notification:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true -Dquarkus.container-image.build=false
+        run: ./gradlew :axis-notification:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 
       - name: Build native executable (axis-media)
-        run: ./gradlew :axis-media:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true -Dquarkus.container-image.build=false
+        run: ./gradlew :axis-media:build -Dquarkus.native.enabled=true -Dquarkus.native.container-build=true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
