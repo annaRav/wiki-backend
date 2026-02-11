@@ -10,7 +10,7 @@ public record CustomFieldDefinitionResponse(
         @Schema(description = "Unique identifier of the field definition")
         UUID id,
 
-        @Schema(description = "Display label for the user", example = "Обмеження бюджету")
+        @Schema(description = "Display label for the user")
         String label,
 
         @Schema(description = "Data type of the field")

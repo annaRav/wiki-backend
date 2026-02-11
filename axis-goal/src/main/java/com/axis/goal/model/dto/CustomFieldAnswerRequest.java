@@ -11,6 +11,6 @@ public record CustomFieldAnswerRequest(
         @NotNull(message = "Field definition ID is required")
         UUID fieldDefinitionId,
 
-        @Schema(description = "Value for the custom field", example = "5000")
+        @Schema(description = "Value for the custom field")
         String value
 ) {}

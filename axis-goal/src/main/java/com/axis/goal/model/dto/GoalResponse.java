@@ -13,16 +13,16 @@ public record GoalResponse(
     @Schema(description = "Unique identifier of the goal")
     UUID id,
 
-    @Schema(description = "Title of the goal", example = "Learn Spring Boot")
+    @Schema(description = "Title of the goal")
     String title,
 
-    @Schema(description = "Detailed description of the goal", example = "Master Spring Boot 3 and build microservices")
+    @Schema(description = "Detailed description of the goal")
     String description,
 
     @Schema(description = "ID of the goal type")
     UUID typeId,
 
-    @Schema(description = "Current status of the goal", example = "IN_PROGRESS")
+    @Schema(description = "Current status of the goal")
     GoalStatus status,
 
     @Schema(description = "ID of the user who owns this goal")

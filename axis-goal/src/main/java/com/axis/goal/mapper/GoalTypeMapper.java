@@ -28,6 +28,7 @@ public interface GoalTypeMapper {
     @Mapping(target = "userId", ignore = true)
     @Mapping(target = "levelNumber", ignore = true)
     @Mapping(target = "goals", ignore = true)
+    @Mapping(target = "customFields", ignore = true)
     GoalType toEntity(GoalTypeRequest request);
 
     /**

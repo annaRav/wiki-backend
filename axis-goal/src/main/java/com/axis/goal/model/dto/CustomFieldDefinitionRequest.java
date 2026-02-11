@@ -8,7 +8,7 @@ import jakarta.validation.constraints.Pattern;
 
 @Schema(description = "Request to define a custom field")
 public record CustomFieldDefinitionRequest(
-        @Schema(description = "Display label for the user", example = "Обмеження бюджету")
+        @Schema(description = "Display label for the user")
         @NotBlank(message = "Field label is required")
         String label,
 

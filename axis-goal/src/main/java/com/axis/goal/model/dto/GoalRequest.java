@@ -14,12 +14,12 @@ import java.util.UUID;
 @Schema(description = "Request DTO for creating or updating a goal")
 public record GoalRequest(
 
-    @Schema(description = "Title of the goal", example = "Learn Spring Boot")
+    @Schema(description = "Title of the goal")
     @NotBlank(message = "Title is required")
     @Size(max = 255, message = "Title must not exceed 255 characters")
     String title,
 
-    @Schema(description = "Detailed description of the goal", example = "Master Spring Boot 3 and build microservices")
+    @Schema(description = "Detailed description of the goal")
     @Size(max = 5000, message = "Description must not exceed 5000 characters")
     String description,
 
@@ -27,7 +27,7 @@ public record GoalRequest(
     @NotNull(message = "Goal type ID is required")
     UUID typeId,
 
-    @Schema(description = "Current status of the goal", example = "NOT_STARTED")
+    @Schema(description = "Current status of the goal")
     @NotNull(message = "Goal status is required")
     GoalStatus status,
 

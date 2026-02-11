@@ -42,12 +42,11 @@ public interface CustomFieldAnswerMapper {
     /**
      * Partially update existing CustomFieldAnswer entity from CustomFieldAnswerRequest DTO (PATCH - partial update)
      * Only non-null fields in the request will be updated
-     * Note: Preserves id, fieldDefinition, and goal. fieldDefinitionId changes are ignored.
+     * Note: Preserves id, fieldDefinition, and goal. fieldDefinitionId from request is not mapped.
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fieldDefinition", ignore = true)
     @Mapping(target = "goal", ignore = true)
-    @Mapping(target = "fieldDefinitionId", ignore = true)
     @Mapping(target = "value", nullValuePropertyMappingStrategy = IGNORE)
     void patchEntity(CustomFieldAnswerRequest request, @MappingTarget CustomFieldAnswer answer);
 }

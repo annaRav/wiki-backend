@@ -11,10 +11,10 @@ public record GoalTypeResponse(
         @Schema(description = "Unique identifier of the goal type")
         UUID id,
 
-        @Schema(description = "Title of the goal type", example = "Long term goal")
+        @Schema(description = "Title of the goal type")
         String title,
 
-        @Schema(description = "Hierarchy level number", example = "1")
+        @Schema(description = "Hierarchy level number")
         Integer levelNumber,
 
         @Schema(description = "Schema of custom fields available for this type")

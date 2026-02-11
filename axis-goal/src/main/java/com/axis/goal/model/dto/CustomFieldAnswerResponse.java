@@ -13,12 +13,12 @@ public record CustomFieldAnswerResponse(
         @Schema(description = "ID of the custom field definition")
         UUID fieldDefinitionId,
 
-        @Schema(description = "Display label of the field", example = "Budget Limit")
+        @Schema(description = "Display label of the field")
         String fieldLabel,
 
         @Schema(description = "Data type of the field")
         CustomFieldType fieldType,
 
-        @Schema(description = "Value provided for the field", example = "5000")
+        @Schema(description = "Value provided for the field")
         String value
 ) {}
