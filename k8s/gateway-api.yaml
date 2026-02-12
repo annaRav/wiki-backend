@@ -71,6 +71,18 @@ spec:
     - path:
         type: PathPrefix
         value: /api/goals
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "http://localhost:3000"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+        - name: Access-Control-Allow-Credentials
+          value: "true"
     backendRefs:
     - name: axis-goal
       port: 8081
@@ -78,6 +90,18 @@ spec:
     - path:
         type: PathPrefix
         value: /api/goal-types
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "http://localhost:3000"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+        - name: Access-Control-Allow-Credentials
+          value: "true"
     backendRefs:
     - name: axis-goal
       port: 8081
@@ -96,6 +120,18 @@ spec:
     - path:
         type: PathPrefix
         value: /api/notifications
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "http://localhost:3000"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+        - name: Access-Control-Allow-Credentials
+          value: "true"
     backendRefs:
     - name: axis-notification
       port: 8082
@@ -114,6 +150,18 @@ spec:
     - path:
         type: PathPrefix
         value: /api/media
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "http://localhost:3000"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+        - name: Access-Control-Allow-Credentials
+          value: "true"
     backendRefs:
     - name: axis-media
       port: 8083
