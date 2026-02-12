@@ -55,10 +55,6 @@ spec:
             secretKeyRef:
               name: postgres-app-secret
               key: POSTGRES_PASSWORD
-        - name: KEYCLOAK_ISSUER_URI
-          value: "http://keycloak:8080/realms/axis"
-        - name: KEYCLOAK_JWK_SET_URI
-          value: "http://keycloak:8080/realms/axis/protocol/openid-connect/certs"
         resources:
           requests:
             memory: "256Mi"

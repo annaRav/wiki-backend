@@ -7,6 +7,7 @@ metadata:
     app: keycloak
 spec:
   replicas: 1
+  progressDeadlineSeconds: 600
   selector:
     matchLabels:
       app: keycloak
@@ -26,7 +27,7 @@ spec:
           name: http
         env:
         - name: JAVA_OPTS_KC_HEAP
-          value: "-Xms256m -Xmx512m"
+          value: "-Xms512m -Xmx1024m"
         envFrom:
         - configMapRef:
             name: keycloak-config
@@ -34,27 +35,27 @@ spec:
             name: keycloak-secret
         resources:
           requests:
-            memory: "512Mi"
-            cpu: "250m"
-          limits:
             memory: "768Mi"
             cpu: "500m"
+          limits:
+            memory: "1536Mi"
+            cpu: "1000m"
         livenessProbe:
           httpGet:
             path: /health/live
             port: 8080
-          initialDelaySeconds: 300
+          initialDelaySeconds: 120
           periodSeconds: 30
-          timeoutSeconds: 10
-          failureThreshold: 5
+          timeoutSeconds: 5
+          failureThreshold: 3
         readinessProbe:
           httpGet:
             path: /health/ready
             port: 8080
-          initialDelaySeconds: 180
-          periodSeconds: 15
-          timeoutSeconds: 10
-          failureThreshold: 10
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 20
         volumeMounts:
         - name: realm-config
           mountPath: /opt/keycloak/data/import

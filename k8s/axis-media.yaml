@@ -51,10 +51,6 @@ spec:
           value: "mongodb://mongodb:27017/axis_media"
         - name: MONGODB_DATABASE
           value: "axis_media"
-        - name: KEYCLOAK_ISSUER_URI
-          value: "http://keycloak:8080/realms/axis"
-        - name: KEYCLOAK_JWK_SET_URI
-          value: "http://keycloak:8080/realms/axis/protocol/openid-connect/certs"
         resources:
           requests:
             memory: "256Mi"
