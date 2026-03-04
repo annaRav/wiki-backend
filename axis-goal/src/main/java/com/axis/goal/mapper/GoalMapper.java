@@ -9,7 +9,7 @@ import org.mapstruct.MappingTarget;
 
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
-@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class})
+@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class, LabelMapper.class})
 public interface GoalMapper {
 
     /**
@@ -20,7 +20,7 @@ public interface GoalMapper {
 
     /**
      * Convert GoalRequest DTO to Goal entity
-     * Note: userId and type will be set separately by the service layer
+     * Note: userId, type, and labels will be set separately by the service layer
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
@@ -29,12 +29,13 @@ public interface GoalMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
+    @Mapping(target = "labels", ignore = true)
     Goal toEntity(GoalRequest request);
 
     /**
      * Update existing Goal entity from GoalRequest DTO
      * Note: Preserves id, userId, type, createdAt, updatedAt
-     * parent and subGoals are managed through separate endpoints
+     * parent, subGoals, and labels are managed through separate service logic
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
@@ -43,11 +44,13 @@ public interface GoalMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
+    @Mapping(target = "labels", ignore = true)
     void updateEntity(GoalRequest request, @MappingTarget Goal goal);
 
     /**
      * Partially updates existing Goal entity from Request DTO (PATCH - partial update)
      * Only non-null fields in the request will be updated
+     * Note: customAnswers and labels are ignored here - handled by the service layer
      */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
@@ -56,6 +59,8 @@ public interface GoalMapper {
     @Mapping(target = "updatedAt", ignore = true)
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
+    @Mapping(target = "customAnswers", ignore = true)
+    @Mapping(target = "labels", ignore = true)
     @Mapping(target = "title", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "description", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "status", nullValuePropertyMappingStrategy = IGNORE)

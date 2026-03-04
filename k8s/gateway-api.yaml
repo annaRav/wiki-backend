@@ -101,6 +101,60 @@ spec:
     backendRefs:
     - name: axis-goal
       port: 8081
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/labels
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "*"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+    backendRefs:
+    - name: axis-goal
+      port: 8081
+---
+# HTTPRoute - Swagger UI for Goal service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: goal-swagger-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /goal/swagger-ui
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /swagger-ui
+    backendRefs:
+    - name: axis-goal
+      port: 8081
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /goal/api-docs
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /api-docs
+    backendRefs:
+    - name: axis-goal
+      port: 8081
 ---
 # HTTPRoute - routing rules for Notification service
 apiVersion: gateway.networking.k8s.io/v1
@@ -130,6 +184,108 @@ spec:
     - name: axis-notification
       port: 8082
 ---
+# HTTPRoute - Swagger UI for Notification service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: notification-swagger-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /notification/swagger-ui
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /swagger-ui
+    backendRefs:
+    - name: axis-notification
+      port: 8082
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /notification/api-docs
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /api-docs
+    backendRefs:
+    - name: axis-notification
+      port: 8082
+---
+# HTTPRoute - routing rules for User service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: user-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /api/users
+    filters:
+    - type: ResponseHeaderModifier
+      responseHeaderModifier:
+        add:
+        - name: Access-Control-Allow-Origin
+          value: "*"
+        - name: Access-Control-Allow-Methods
+          value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
+        - name: Access-Control-Allow-Headers
+          value: "Accept, Authorization, Content-Type, X-Requested-With"
+    backendRefs:
+    - name: axis-user
+      port: 8084
+---
+# HTTPRoute - Swagger UI for User service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: user-swagger-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /user/swagger-ui
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /swagger-ui
+    backendRefs:
+    - name: axis-user
+      port: 8084
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /user/api-docs
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /api-docs
+    backendRefs:
+    - name: axis-user
+      port: 8084
+---
 # HTTPRoute - routing rules for Media service
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -154,6 +310,43 @@ spec:
           value: "GET, POST, PUT, DELETE, OPTIONS, PATCH"
         - name: Access-Control-Allow-Headers
           value: "Accept, Authorization, Content-Type, X-Requested-With"
+    backendRefs:
+    - name: axis-media
+      port: 8083
+---
+# HTTPRoute - Swagger UI for Media service
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: media-swagger-route
+  namespace: axis
+spec:
+  parentRefs:
+  - name: axis-gateway
+  rules:
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /media/swagger-ui
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /swagger-ui
+    backendRefs:
+    - name: axis-media
+      port: 8083
+  - matches:
+    - path:
+        type: PathPrefix
+        value: /media/api-docs
+    filters:
+    - type: URLRewrite
+      urlRewrite:
+        path:
+          type: ReplacePrefixMatch
+          replacePrefixMatch: /api-docs
     backendRefs:
     - name: axis-media
       port: 8083

@@ -23,7 +23,8 @@ Axis Backend is a microservices-based life goals planning platform (similar to T
 - PostgreSQL (separate instances for Keycloak and application data)
 - MongoDB 7
 - RabbitMQ 3
-- Redis 7
+- Prometheus (metrics collection)
+- Grafana 10 (metrics visualization)
 - Kubernetes (Minikube) with Skaffold
 - Nginx Ingress Controller for API routing
 
@@ -70,16 +71,16 @@ eval $(minikube docker-env)
 skaffold dev
 ```
 
-Skaffold will build 3 JVM Docker images, deploy all infrastructure (PostgreSQL, Keycloak, MongoDB, RabbitMQ, Redis) and all services, and set up port-forwarding. On code changes, Skaffold automatically rebuilds and redeploys the affected service.
+Skaffold will build 3 JVM Docker images, deploy all infrastructure (PostgreSQL, Keycloak, MongoDB, RabbitMQ, Prometheus, Grafana) and all services, and set up port-forwarding. On code changes, Skaffold automatically rebuilds and redeploys the affected service.
 
 **Access Points:**
 - API Gateway: http://localhost:8080
 - Keycloak: http://localhost:8180
 - RabbitMQ Management: http://localhost:15672
 - Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
 - PostgreSQL: localhost:5433
 - MongoDB: localhost:27017
-- Redis: localhost:6379
 
 ### Building Native Images (CI/CD Only)
 
@@ -104,13 +105,13 @@ k8s/
 ├── config/                   # ConfigMaps and Secrets
 │   ├── configmaps.yaml
 │   └── secrets.yaml
-└── infrastructure/           # Keycloak, PostgreSQL, MongoDB, RabbitMQ, Redis, Prometheus
+└── infrastructure/           # Keycloak, PostgreSQL, MongoDB, RabbitMQ, Prometheus, Grafana
     ├── postgres-app.yaml
     ├── keycloak.yaml
     ├── mongodb.yaml
     ├── rabbitmq.yaml
-    ├── redis.yaml
     ├── prometheus.yaml
+    ├── grafana.yaml
     └── keycloak-realm-config.yaml
 ```
 
@@ -316,8 +317,8 @@ Realm `axis` is auto-imported with:
 - `postgres-app`: Application database (for future use)
 - `mongodb`: Document storage (media files)
 - `rabbitmq`: Message broker
-- `redis`: Caching
 - `prometheus`: Metrics collection and monitoring (scrapes `/q/metrics` from all services)
+- `grafana`: Metrics visualization dashboard (auto-configured with Prometheus datasource)
 
 ## API Routing
 

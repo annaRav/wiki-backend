@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: axis-user
+  namespace: axis
+  labels:
+    app: axis-user
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: axis-user
+  template:
+    metadata:
+      labels:
+        app: axis-user
+    spec:
+      initContainers:
+      - name: wait-for-keycloak
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak to be ready..."
+          until nc -z keycloak 8080; do
+            echo "Keycloak is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "Keycloak is ready!"
+      - name: wait-for-postgres
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for PostgreSQL to be ready..."
+          until nc -z postgres-app 5432; do
+            echo "PostgreSQL is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "PostgreSQL is ready!"
+      containers:
+      - name: user
+        image: axis/user:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8084
+        envFrom:
+        - configMapRef:
+            name: user-db-config
+        env:
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-app-secret
+              key: POSTGRES_PASSWORD
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8084
+          initialDelaySeconds: 45
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8084
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: axis-user
+  namespace: axis
+  labels:
+    app: axis-user
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8084
+    targetPort: 8084
+    protocol: TCP
+  selector:
+    app: axis-user

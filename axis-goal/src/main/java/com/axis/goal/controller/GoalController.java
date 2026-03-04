@@ -59,7 +59,7 @@ public class GoalController {
     @Path("/{id}")
     public GoalResponse patch(
             @Parameter(description = "Goal ID") @PathParam("id") UUID id,
-            @Valid GoalRequest request) {
+            GoalRequest request) {
         log.debug("Patching goal: {}", id);
         return goalService.patch(id, request);
     }

@@ -30,8 +30,8 @@ A microservices-based life goals planning platform (similar to Trello) built wit
 - PostgreSQL (for Keycloak and application data)
 - MongoDB 7 (for media storage)
 - RabbitMQ 3 (message broker)
-- Redis 7 (caching)
-- Prometheus (metrics and monitoring)
+- Prometheus (metrics collection)
+- Grafana 10 (metrics visualization)
 - Kubernetes (Minikube)
 - Skaffold (local development)
 
@@ -61,6 +61,7 @@ skaffold dev
 # Keycloak: http://localhost:8180
 # RabbitMQ Management: http://localhost:15672
 # Prometheus: http://localhost:9090
+# Grafana: http://localhost:3000 (admin/admin)
 ```
 
 ## Keycloak Setup
@@ -82,7 +83,7 @@ axis-backend/
 ├── axis-media/          # Media management service
 └── k8s/                 # Kubernetes manifests
     ├── config/          # ConfigMaps and Secrets
-    ├── infrastructure/  # Keycloak, PostgreSQL, MongoDB, RabbitMQ, Redis
+    ├── infrastructure/  # Keycloak, PostgreSQL, MongoDB, RabbitMQ, Prometheus, Grafana
     └── services/        # Microservice deployments
 ```
 

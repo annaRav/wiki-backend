@@ -1,41 +1,45 @@
-apiVersion: skaffold/v2beta29
+apiVersion: skaffold/v4beta13
 kind: Config
 metadata:
   name: axis-backend
 
 build:
+  hooks:
+    before:
+      - command: ["./gradlew", "build", "-x", "test"]
   artifacts:
     - image: axis/goal
       context: .
       docker:
         dockerfile: axis-goal/src/main/docker/Dockerfile.jvm
-      hooks:
-        before:
-          - command: ["./gradlew", ":axis-goal:build", "-x", "test"]
     - image: axis/media
       context: .
       docker:
         dockerfile: axis-media/src/main/docker/Dockerfile.jvm
-      hooks:
-        before:
-          - command: ["./gradlew", ":axis-media:build", "-x", "test"]
     - image: axis/notification
       context: .
       docker:
         dockerfile: axis-notification/src/main/docker/Dockerfile.jvm
-      hooks:
-        before:
-          - command: ["./gradlew", ":axis-notification:build", "-x", "test"]
+    - image: axis/user
+      context: .
+      docker:
+        dockerfile: axis-user/src/main/docker/Dockerfile.jvm
   local:
     push: false
 
+manifests:
+  rawYaml:
+    - k8s/namespace.yaml
+    - k8s/config/**
+    - k8s/infrastructure/**
+    - k8s/gateway-api.yaml
+    - k8s/axis-goal.yaml
+    - k8s/axis-media.yaml
+    - k8s/axis-notification.yaml
+    - k8s/axis-user.yaml
+
 deploy:
-  kubectl:
-    manifests:
-      - k8s/namespace.yaml
-      - k8s/config/**
-      - k8s/infrastructure/**
-      - k8s/*.yaml
+  kubectl: {}
 
 portForward:
   - resourceType: service
@@ -43,11 +47,13 @@ portForward:
     namespace: nginx-gateway
     port: 80
     localPort: 8080
+    address: 0.0.0.0
   - resourceType: service
     resourceName: rabbitmq
     namespace: axis
     port: 15672
     localPort: 15672
+    address: 0.0.0.0
   - resourceType: service
     resourceName: postgres-app
     namespace: axis
@@ -59,12 +65,14 @@ portForward:
     port: 27017
     localPort: 27017
   - resourceType: service
-    resourceName: redis
-    namespace: axis
-    port: 6379
-    localPort: 6379
-  - resourceType: service
     resourceName: prometheus
     namespace: axis
     port: 9090
     localPort: 9090
+    address: 0.0.0.0
+  - resourceType: service
+    resourceName: grafana
+    namespace: axis
+    port: 3000
+    localPort: 3000
+    address: 0.0.0.0

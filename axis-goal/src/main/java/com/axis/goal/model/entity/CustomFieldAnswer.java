@@ -22,7 +22,7 @@ public class CustomFieldAnswer {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "field_definition_id", nullable = false)
-    private CustomFieldDefinition fieldDefinition; // Ссылка на определение поля
+    private CustomFieldDefinition fieldDefinition;
 
     @Column(name = "field_value", columnDefinition = "TEXT")
     private String value;

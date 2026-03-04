@@ -11,9 +11,11 @@ import com.axis.goal.model.entity.CustomFieldDefinition;
 import com.axis.goal.model.entity.Goal;
 import com.axis.goal.model.entity.Goal.GoalStatus;
 import com.axis.goal.model.entity.GoalType;
+import com.axis.goal.model.entity.Label;
 import com.axis.goal.repository.CustomFieldDefinitionRepository;
 import com.axis.goal.repository.GoalRepository;
 import com.axis.goal.repository.GoalTypeRepository;
+import com.axis.goal.repository.LabelRepository;
 import com.axis.goal.service.GoalService;
 import io.quarkus.panache.common.Page;
 import io.quarkus.panache.common.Sort;
@@ -43,6 +45,9 @@ public class GoalServicePg implements GoalService {
     GoalTypeRepository goalTypeRepository;
 
     @Inject
+    LabelRepository labelRepository;
+
+    @Inject
     SecurityUtils securityUtils;
 
     @Override
@@ -60,6 +65,7 @@ public class GoalServicePg implements GoalService {
         goal.setType(goalType);
 
         setupCustomFieldAnswers(goal);
+        setupLabels(goal, request.labelIds(), userId);
 
         goalRepository.persist(goal);
         log.info("Created goal with id: {} for user: {}", goal.getId(), userId);
@@ -77,6 +83,7 @@ public class GoalServicePg implements GoalService {
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", id));
 
         goalMapper.patchEntity(request, existingGoal);
+        setupLabels(existingGoal, request.labelIds(), userId);
 
         log.info("Goal patched: {} for user: {}", id, userId);
         return goalMapper.toResponse(existingGoal);
@@ -168,6 +175,24 @@ public class GoalServicePg implements GoalService {
             ? Sort.Direction.Ascending
             : Sort.Direction.Descending;
         return Sort.by(sortBy, direction);
+    }
+
+    /**
+     * Resolves label IDs to Label entities and assigns them to the goal.
+     * If labelIds is null, labels are left unchanged (for PATCH semantics).
+     * If labelIds is empty, all labels are removed.
+     */
+    private void setupLabels(Goal goal, List<UUID> labelIds, UUID userId) {
+        if (labelIds == null) {
+            return;
+        }
+        if (labelIds.isEmpty()) {
+            goal.getLabels().clear();
+            return;
+        }
+        List<Label> labels = labelRepository.findByIdsAndUserId(labelIds, userId);
+        goal.getLabels().clear();
+        goal.getLabels().addAll(labels);
     }
 
     /**

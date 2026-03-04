@@ -51,6 +51,15 @@ public class Goal {
     @Builder.Default
     private List<CustomFieldAnswer> customAnswers = new ArrayList<>();
 
+    @ManyToMany
+    @JoinTable(
+            name = "goal_labels",
+            joinColumns = @JoinColumn(name = "goal_id"),
+            inverseJoinColumns = @JoinColumn(name = "label_id")
+    )
+    @Builder.Default
+    private List<Label> labels = new ArrayList<>();
+
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 

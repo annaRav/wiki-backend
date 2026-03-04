@@ -44,7 +44,7 @@ skaffold dev
 This will:
 - Run `./gradlew :axis-*:build -x test` for each service
 - Build 3 JVM Docker images
-- Deploy all infrastructure (PostgreSQL, Keycloak, MongoDB, RabbitMQ, Redis)
+- Deploy all infrastructure (PostgreSQL, Keycloak, MongoDB, RabbitMQ, Prometheus, Grafana)
 - Deploy all services (axis-goal, axis-media, axis-notification)
 - Set up port-forwarding for all services
 - Watch for file changes and auto-rebuild affected services
@@ -53,9 +53,10 @@ This will:
 - API Gateway: http://localhost:8080
 - Keycloak: http://localhost:8180
 - RabbitMQ Management: http://localhost:15672
+- Prometheus: http://localhost:9090
+- Grafana: http://localhost:3000 (admin/admin)
 - PostgreSQL: localhost:5433
 - MongoDB: localhost:27017
-- Redis: localhost:6379
 
 ---
 
