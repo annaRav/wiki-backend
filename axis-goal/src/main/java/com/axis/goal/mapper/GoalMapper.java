@@ -9,7 +9,7 @@ import org.mapstruct.MappingTarget;
 
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
-@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class, LabelMapper.class})
+@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class, LabelMapper.class, ChecklistMapper.class})
 public interface GoalMapper {
 
     /**
@@ -30,6 +30,7 @@ public interface GoalMapper {
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
     @Mapping(target = "labels", ignore = true)
+    @Mapping(target = "checklists", ignore = true)
     Goal toEntity(GoalRequest request);
 
     /**
@@ -45,6 +46,7 @@ public interface GoalMapper {
     @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
     @Mapping(target = "labels", ignore = true)
+    @Mapping(target = "checklists", ignore = true)
     void updateEntity(GoalRequest request, @MappingTarget Goal goal);
 
     /**
@@ -61,6 +63,7 @@ public interface GoalMapper {
     @Mapping(target = "subGoals", ignore = true)
     @Mapping(target = "customAnswers", ignore = true)
     @Mapping(target = "labels", ignore = true)
+    @Mapping(target = "checklists", ignore = true)
     @Mapping(target = "title", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "description", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "status", nullValuePropertyMappingStrategy = IGNORE)

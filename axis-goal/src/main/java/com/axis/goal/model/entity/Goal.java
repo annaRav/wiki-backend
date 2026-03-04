@@ -60,6 +60,10 @@ public class Goal {
     @Builder.Default
     private List<Label> labels = new ArrayList<>();
 
+    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Checklist> checklists = new ArrayList<>();
+
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 

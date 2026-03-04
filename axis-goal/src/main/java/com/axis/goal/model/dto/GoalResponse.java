@@ -35,7 +35,10 @@ public record GoalResponse(
     LocalDateTime updatedAt,
 
     @Schema(description = "Labels attached to this goal")
-    List<LabelResponse> labels
+    List<LabelResponse> labels,
+
+    @Schema(description = "Checklists attached to this goal, ordered by position")
+    List<ChecklistResponse> checklists
 
 ) {
 }
