@@ -133,12 +133,6 @@ spec:
     - path:
         type: PathPrefix
         value: /goal/swagger-ui
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /swagger-ui
     backendRefs:
     - name: axis-goal
       port: 8081
@@ -146,12 +140,6 @@ spec:
     - path:
         type: PathPrefix
         value: /goal/api-docs
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /api-docs
     backendRefs:
     - name: axis-goal
       port: 8081
@@ -198,12 +186,6 @@ spec:
     - path:
         type: PathPrefix
         value: /notification/swagger-ui
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /swagger-ui
     backendRefs:
     - name: axis-notification
       port: 8082
@@ -211,12 +193,6 @@ spec:
     - path:
         type: PathPrefix
         value: /notification/api-docs
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /api-docs
     backendRefs:
     - name: axis-notification
       port: 8082
@@ -263,12 +239,6 @@ spec:
     - path:
         type: PathPrefix
         value: /user/swagger-ui
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /swagger-ui
     backendRefs:
     - name: axis-user
       port: 8084
@@ -276,12 +246,6 @@ spec:
     - path:
         type: PathPrefix
         value: /user/api-docs
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /api-docs
     backendRefs:
     - name: axis-user
       port: 8084
@@ -328,12 +292,6 @@ spec:
     - path:
         type: PathPrefix
         value: /media/swagger-ui
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /swagger-ui
     backendRefs:
     - name: axis-media
       port: 8083
@@ -341,12 +299,6 @@ spec:
     - path:
         type: PathPrefix
         value: /media/api-docs
-    filters:
-    - type: URLRewrite
-      urlRewrite:
-        path:
-          type: ReplacePrefixMatch
-          replacePrefixMatch: /api-docs
     backendRefs:
     - name: axis-media
       port: 8083
