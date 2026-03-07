@@ -10,7 +10,7 @@ Axis Backend is a microservices-based life goals planning platform (similar to T
 
 - **axis-goal** (Port 8081): Goals management service with PostgreSQL storage for long/medium/short-term goals, goal types, and custom fields
 - **axis-notification** (Port 8082): Notification management service with PostgreSQL storage for notification logs, user settings, and templates
-- **axis-media** (Port 8083): Media file management service with MongoDB storage
+- **axis-media** (Port 8083): Media file management service with PostgreSQL metadata storage and filesystem (EmptyDir volume at `/var/media`) for binary files
 - **axis-common**: Shared library containing security utilities, exception handling, and DTOs
 - **Gateway**: Nginx Ingress Controller handles routing (no separate gateway service)
 

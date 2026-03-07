@@ -14,18 +14,21 @@ data:
         CREATE USER goal_user WITH PASSWORD '$POSTGRES_PASSWORD';
         CREATE USER notification_user WITH PASSWORD '$POSTGRES_PASSWORD';
         CREATE USER user_service_user WITH PASSWORD '$POSTGRES_PASSWORD';
+        CREATE USER media_user WITH PASSWORD '$POSTGRES_PASSWORD';
 
         -- Create databases
         CREATE DATABASE keycloak OWNER keycloak_user;
         CREATE DATABASE goal OWNER goal_user;
         CREATE DATABASE notification OWNER notification_user;
         CREATE DATABASE user_service OWNER user_service_user;
+        CREATE DATABASE media OWNER media_user;
 
         -- Grant privileges
         GRANT ALL PRIVILEGES ON DATABASE keycloak TO keycloak_user;
         GRANT ALL PRIVILEGES ON DATABASE goal TO goal_user;
         GRANT ALL PRIVILEGES ON DATABASE notification TO notification_user;
         GRANT ALL PRIVILEGES ON DATABASE user_service TO user_service_user;
+        GRANT ALL PRIVILEGES ON DATABASE media TO media_user;
     EOSQL
 
     echo "Databases created successfully!"
@@ -89,6 +92,17 @@ data:
   DB_PORT: "5432"
   DB_NAME: user_service
   DB_USERNAME: user_service_user
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: media-db-config
+  namespace: axis
+data:
+  DB_HOST: postgres-app
+  DB_PORT: "5432"
+  DB_NAME: media
+  DB_USERNAME: media_user
 ---
 apiVersion: v1
 kind: ConfigMap

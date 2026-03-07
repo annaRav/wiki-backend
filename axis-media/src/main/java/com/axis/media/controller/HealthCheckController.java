@@ -31,7 +31,8 @@ public class HealthCheckController {
             "service", "axis-media",
             "status", "UP",
             "timestamp", LocalDateTime.now().toString(),
-            "database", "MongoDB",
+            "database", "PostgreSQL",
+            "storage", "Filesystem",
             "version", "1.0.0-SNAPSHOT"
         )).build();
     }
