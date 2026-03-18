@@ -1,0 +1,139 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: axis-analytics
+  namespace: axis
+  labels:
+    app: axis-analytics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: axis-analytics
+  template:
+    metadata:
+      labels:
+        app: axis-analytics
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/path: "/q/metrics"
+        prometheus.io/port: "8085"
+    spec:
+      initContainers:
+      - name: wait-for-keycloak
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for Keycloak to be ready..."
+          until nc -z keycloak 8080; do
+            echo "Keycloak is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "Keycloak is ready!"
+      - name: wait-for-mongodb
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for MongoDB to be ready..."
+          until nc -z mongodb 27017; do
+            echo "MongoDB is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "MongoDB is ready!"
+      - name: wait-for-rabbitmq
+        image: busybox:1.36
+        command:
+        - sh
+        - -c
+        - |
+          echo "Waiting for RabbitMQ to be ready..."
+          until nc -z rabbitmq 5672; do
+            echo "RabbitMQ is not ready yet. Waiting..."
+            sleep 5
+          done
+          echo "RabbitMQ is ready!"
+      containers:
+      - name: analytics
+        image: axis/analytics:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8085
+        env:
+        - name: MONGO_HOST
+          value: mongodb
+        - name: MONGO_PORT
+          value: "27017"
+        - name: MONGO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_INITDB_ROOT_USERNAME
+        - name: MONGO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mongodb-secret
+              key: MONGO_INITDB_ROOT_PASSWORD
+        - name: RABBITMQ_HOST
+          value: rabbitmq
+        - name: RABBITMQ_AMQP_PORT
+          value: "5672"
+        - name: RABBITMQ_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-config
+              key: RABBITMQ_DEFAULT_USER
+        - name: RABBITMQ_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: rabbitmq-secret
+              key: RABBITMQ_DEFAULT_PASS
+        - name: RABBITMQ_VIRTUAL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: rabbitmq-config
+              key: RABBITMQ_DEFAULT_VHOST
+        - name: KEYCLOAK_ISSUER_URI
+          value: http://keycloak:8080/realms/axis
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /actuator/health/liveness
+            port: 8085
+          initialDelaySeconds: 45
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health/readiness
+            port: 8085
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: axis-analytics
+  namespace: axis
+  labels:
+    app: axis-analytics
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8085
+    targetPort: 8085
+    protocol: TCP
+  selector:
+    app: axis-analytics

@@ -15,7 +15,8 @@ public interface ChecklistMapper {
     ChecklistResponse toResponse(Checklist checklist);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "goal", ignore = true)
+    @Mapping(target = "ownerId", ignore = true)
+    @Mapping(target = "ownerType", ignore = true)
     @Mapping(target = "items", ignore = true)
     @Mapping(target = "position", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
@@ -23,7 +24,8 @@ public interface ChecklistMapper {
     Checklist toEntity(ChecklistRequest request);
 
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "goal", ignore = true)
+    @Mapping(target = "ownerId", ignore = true)
+    @Mapping(target = "ownerType", ignore = true)
     @Mapping(target = "items", ignore = true)
     @Mapping(target = "position", ignore = true)
     @Mapping(target = "createdAt", ignore = true)

@@ -8,33 +8,15 @@ import java.util.UUID;
 
 public interface CustomFieldAnswerService {
 
-    /**
-     * Create a new custom field answer for a goal
-     */
-    CustomFieldAnswerResponse create(UUID goalId, CustomFieldAnswerRequest request);
+    CustomFieldAnswerResponse create(CustomFieldAnswerRequest request);
 
-    /**
-     * Update an existing custom field answer (full update)
-     */
     CustomFieldAnswerResponse update(UUID id, CustomFieldAnswerRequest request);
 
-    /**
-     * Partially update an existing custom field answer (only non-null fields)
-     */
     CustomFieldAnswerResponse patch(UUID id, CustomFieldAnswerRequest request);
 
-    /**
-     * Find a custom field answer by ID
-     */
     CustomFieldAnswerResponse findById(UUID id);
 
-    /**
-     * Find all custom field answers for a specific goal
-     */
-    List<CustomFieldAnswerResponse> findByGoalId(UUID goalId);
+    List<CustomFieldAnswerResponse> findByOwnerId(UUID ownerId);
 
-    /**
-     * Delete a custom field answer
-     */
     void delete(UUID id);
 }

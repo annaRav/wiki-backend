@@ -8,3 +8,12 @@ databaseChangeLog:
   - include:
       file: db/changelog/V3__add_checklists.sql
       relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V4__refactor_goal_hierarchy.sql
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V5__add_progress_and_rated_status.sql
+      relativeToChangelogFile: false
+  - include:
+      file: db/changelog/V6__unify_checklist_ownership.sql
+      relativeToChangelogFile: false

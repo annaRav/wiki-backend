@@ -7,19 +7,19 @@ import java.util.UUID;
 
 public interface ChecklistService {
 
-    ChecklistResponse createChecklist(UUID goalId, ChecklistRequest request);
+    ChecklistResponse createChecklist(ChecklistRequest request);
 
-    List<ChecklistResponse> findAllChecklists(UUID goalId);
+    List<ChecklistResponse> findAllChecklists(UUID ownerId);
 
-    ChecklistResponse patchChecklist(UUID goalId, UUID checklistId, ChecklistRequest request);
+    ChecklistResponse patchChecklist(UUID checklistId, ChecklistRequest request);
 
-    void deleteChecklist(UUID goalId, UUID checklistId);
+    void deleteChecklist(UUID checklistId);
 
-    ChecklistItemResponse createItem(UUID goalId, UUID checklistId, ChecklistItemRequest request);
+    ChecklistItemResponse createItem(UUID checklistId, ChecklistItemRequest request);
 
-    ChecklistItemResponse patchItem(UUID goalId, UUID checklistId, UUID itemId, ChecklistItemRequest request);
+    ChecklistItemResponse patchItem(UUID checklistId, UUID itemId, ChecklistItemRequest request);
 
-    ChecklistItemResponse reorderItem(UUID goalId, UUID checklistId, UUID itemId, int newPosition);
+    ChecklistItemResponse reorderItem(UUID checklistId, UUID itemId, int newPosition);
 
-    void deleteItem(UUID goalId, UUID checklistId, UUID itemId);
+    void deleteItem(UUID checklistId, UUID itemId);
 }

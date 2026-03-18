@@ -1,12 +1,14 @@
 package com.axis.goal.model.dto;
 
 import com.axis.goal.model.enums.CustomFieldType;
+import com.axis.goal.model.enums.OwnerType;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.UUID;
 
 @Schema(description = "Response containing custom field definition")
 public record CustomFieldDefinitionResponse(
+
         @Schema(description = "Unique identifier of the field definition")
         UUID id,
 
@@ -20,5 +22,9 @@ public record CustomFieldDefinitionResponse(
         boolean required,
 
         @Schema(description = "Help text for the input field")
-        String placeholder
+        String placeholder,
+
+        @Schema(description = "Entity type this field definition belongs to")
+        OwnerType ownerType
+
 ) {}

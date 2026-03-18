@@ -1,5 +1,6 @@
 package com.axis.goal.model.entity;
 
+import com.axis.goal.model.enums.ProgressStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,25 +32,17 @@ public class Goal {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_type_id", nullable = false)
-    private GoalType type;
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "life_aspect_id", nullable = false)
+    private LifeAspect lifeAspect;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private GoalStatus status;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_id")
-    private Goal parent;
-
-    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Goal> subGoals = new ArrayList<>();
+    private ProgressStatus status;
 
     @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
-    private List<CustomFieldAnswer> customAnswers = new ArrayList<>();
+    private List<SubGoal> subGoals = new ArrayList<>();
 
     @ManyToMany
     @JoinTable(
@@ -59,10 +52,6 @@ public class Goal {
     )
     @Builder.Default
     private List<Label> labels = new ArrayList<>();
-
-    @OneToMany(mappedBy = "goal", cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
-    private List<Checklist> checklists = new ArrayList<>();
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
@@ -74,12 +63,4 @@ public class Goal {
     @UpdateTimestamp
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
-
-    public enum GoalStatus {
-        NOT_STARTED,
-        IN_PROGRESS,
-        COMPLETED,
-        CANCELLED,
-        ON_HOLD
-    }  //TODO change sql
 }

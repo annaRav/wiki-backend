@@ -7,10 +7,11 @@ import com.axis.goal.mapper.ChecklistMapper;
 import com.axis.goal.model.dto.*;
 import com.axis.goal.model.entity.Checklist;
 import com.axis.goal.model.entity.ChecklistItem;
-import com.axis.goal.model.entity.Goal;
+import com.axis.goal.model.enums.OwnerType;
 import com.axis.goal.repository.ChecklistItemRepository;
 import com.axis.goal.repository.ChecklistRepository;
 import com.axis.goal.repository.GoalRepository;
+import com.axis.goal.repository.SubGoalRepository;
 import com.axis.goal.service.ChecklistService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -26,6 +27,9 @@ public class ChecklistServicePg implements ChecklistService {
 
     @Inject
     GoalRepository goalRepository;
+
+    @Inject
+    SubGoalRepository subGoalRepository;
 
     @Inject
     ChecklistRepository checklistRepository;
@@ -44,69 +48,62 @@ public class ChecklistServicePg implements ChecklistService {
 
     @Override
     @Transactional
-    public ChecklistResponse createChecklist(UUID goalId, ChecklistRequest request) {
+    public ChecklistResponse createChecklist(ChecklistRequest request) {
         UUID userId = getCurrentUserId();
-        Goal goal = findGoalForUser(goalId, userId);
+        verifyOwnership(request.ownerId(), request.ownerType(), userId);
 
         Checklist checklist = checklistMapper.toEntity(request);
-        checklist.setGoal(goal);
-        checklist.setPosition((int) checklistRepository.countByGoalId(goalId));
+        checklist.setOwnerId(request.ownerId());
+        checklist.setOwnerType(request.ownerType());
+        checklist.setPosition((int) checklistRepository.countByOwnerId(request.ownerId()));
 
         checklistRepository.persist(checklist);
-        log.info("Created checklist: {} in goal: {} for user: {}", checklist.getId(), goalId, userId);
+        log.info("Created checklist: {} for owner: {} ({}) by user: {}",
+                checklist.getId(), request.ownerId(), request.ownerType(), userId);
 
         return checklistMapper.toResponse(checklist);
     }
 
     @Override
-    @Transactional
-    public List<ChecklistResponse> findAllChecklists(UUID goalId) {
-        UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-
-        return checklistRepository.findByGoalId(goalId).stream()
+    public List<ChecklistResponse> findAllChecklists(UUID ownerId) {
+        return checklistRepository.findByOwnerId(ownerId).stream()
                 .map(checklistMapper::toResponse)
                 .toList();
     }
 
     @Override
     @Transactional
-    public ChecklistResponse patchChecklist(UUID goalId, UUID checklistId, ChecklistRequest request) {
+    public ChecklistResponse patchChecklist(UUID checklistId, ChecklistRequest request) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-
-        Checklist checklist = findChecklistInGoal(checklistId, goalId);
+        Checklist checklist = findAndVerifyChecklist(checklistId, userId);
         checklistMapper.patchEntity(request, checklist);
 
-        log.info("Patched checklist: {} in goal: {} for user: {}", checklistId, goalId, userId);
+        log.info("Patched checklist: {} by user: {}", checklistId, userId);
         return checklistMapper.toResponse(checklist);
     }
 
     @Override
     @Transactional
-    public void deleteChecklist(UUID goalId, UUID checklistId) {
+    public void deleteChecklist(UUID checklistId) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
+        Checklist checklist = findAndVerifyChecklist(checklistId, userId);
 
-        Checklist checklist = findChecklistInGoal(checklistId, goalId);
         int deletedPosition = checklist.getPosition();
+        UUID ownerId = checklist.getOwnerId();
         checklistRepository.delete(checklist);
 
-        // Shift positions of remaining checklists to fill the gap
-        checklistRepository.findByGoalId(goalId).stream()
+        checklistRepository.findByOwnerId(ownerId).stream()
                 .filter(c -> c.getPosition() > deletedPosition)
                 .forEach(c -> c.setPosition(c.getPosition() - 1));
 
-        log.info("Deleted checklist: {} in goal: {} for user: {}", checklistId, goalId, userId);
+        log.info("Deleted checklist: {} by user: {}", checklistId, userId);
     }
 
     @Override
     @Transactional
-    public ChecklistItemResponse createItem(UUID goalId, UUID checklistId, ChecklistItemRequest request) {
+    public ChecklistItemResponse createItem(UUID checklistId, ChecklistItemRequest request) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-
-        Checklist checklist = findChecklistInGoal(checklistId, goalId);
+        Checklist checklist = findAndVerifyChecklist(checklistId, userId);
 
         ChecklistItem item = checklistItemMapper.toEntity(request);
         item.setChecklist(checklist);
@@ -114,31 +111,29 @@ public class ChecklistServicePg implements ChecklistService {
         item.setCompleted(false);
 
         checklistItemRepository.persist(item);
-        log.info("Created item: {} in checklist: {} for user: {}", item.getId(), checklistId, userId);
+        log.info("Created item: {} in checklist: {} by user: {}", item.getId(), checklistId, userId);
 
         return checklistItemMapper.toResponse(item);
     }
 
     @Override
     @Transactional
-    public ChecklistItemResponse patchItem(UUID goalId, UUID checklistId, UUID itemId, ChecklistItemRequest request) {
+    public ChecklistItemResponse patchItem(UUID checklistId, UUID itemId, ChecklistItemRequest request) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-        findChecklistInGoal(checklistId, goalId);
+        findAndVerifyChecklist(checklistId, userId);
 
         ChecklistItem item = findItemInChecklist(itemId, checklistId);
         checklistItemMapper.patchEntity(request, item);
 
-        log.info("Patched item: {} in checklist: {} for user: {}", itemId, checklistId, userId);
+        log.info("Patched item: {} in checklist: {} by user: {}", itemId, checklistId, userId);
         return checklistItemMapper.toResponse(item);
     }
 
     @Override
     @Transactional
-    public ChecklistItemResponse reorderItem(UUID goalId, UUID checklistId, UUID itemId, int newPosition) {
+    public ChecklistItemResponse reorderItem(UUID checklistId, UUID itemId, int newPosition) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-        findChecklistInGoal(checklistId, goalId);
+        findAndVerifyChecklist(checklistId, userId);
 
         List<ChecklistItem> items = checklistItemRepository.findByChecklistId(checklistId);
         ChecklistItem target = items.stream()
@@ -154,27 +149,25 @@ public class ChecklistServicePg implements ChecklistService {
             items.get(i).setPosition(i);
         }
 
-        log.info("Reordered item: {} to position: {} in checklist: {} for user: {}", itemId, clampedPosition, checklistId, userId);
+        log.info("Reordered item: {} to position: {} in checklist: {} by user: {}", itemId, clampedPosition, checklistId, userId);
         return checklistItemMapper.toResponse(target);
     }
 
     @Override
     @Transactional
-    public void deleteItem(UUID goalId, UUID checklistId, UUID itemId) {
+    public void deleteItem(UUID checklistId, UUID itemId) {
         UUID userId = getCurrentUserId();
-        findGoalForUser(goalId, userId);
-        findChecklistInGoal(checklistId, goalId);
+        findAndVerifyChecklist(checklistId, userId);
 
         ChecklistItem item = findItemInChecklist(itemId, checklistId);
         int deletedPosition = item.getPosition();
         checklistItemRepository.delete(item);
 
-        // Shift positions of remaining items to fill the gap
         checklistItemRepository.findByChecklistId(checklistId).stream()
                 .filter(i -> i.getPosition() > deletedPosition)
                 .forEach(i -> i.setPosition(i.getPosition() - 1));
 
-        log.info("Deleted item: {} in checklist: {} for user: {}", itemId, checklistId, userId);
+        log.info("Deleted item: {} in checklist: {} by user: {}", itemId, checklistId, userId);
     }
 
     private UUID getCurrentUserId() {
@@ -182,14 +175,21 @@ public class ChecklistServicePg implements ChecklistService {
                 .orElseThrow(() -> new IllegalStateException("User is not authenticated"));
     }
 
-    private Goal findGoalForUser(UUID goalId, UUID userId) {
-        return goalRepository.findByIdAndUserId(goalId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Goal", goalId));
+    private void verifyOwnership(UUID ownerId, OwnerType ownerType, UUID userId) {
+        switch (ownerType) {
+            case GOAL -> goalRepository.findByIdAndUserId(ownerId, userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Goal", ownerId));
+            case SUB_GOAL -> subGoalRepository.findByIdAndUserId(ownerId, userId)
+                    .orElseThrow(() -> new ResourceNotFoundException("SubGoal", ownerId));
+            default -> throw new IllegalArgumentException("Checklists not supported for owner type: " + ownerType);
+        }
     }
 
-    private Checklist findChecklistInGoal(UUID checklistId, UUID goalId) {
-        return checklistRepository.findByIdAndGoalId(checklistId, goalId)
+    private Checklist findAndVerifyChecklist(UUID checklistId, UUID userId) {
+        Checklist checklist = checklistRepository.findByIdOptional(checklistId)
                 .orElseThrow(() -> new ResourceNotFoundException("Checklist", checklistId));
+        verifyOwnership(checklist.getOwnerId(), checklist.getOwnerType(), userId);
+        return checklist;
     }
 
     private ChecklistItem findItemInChecklist(UUID itemId, UUID checklistId) {

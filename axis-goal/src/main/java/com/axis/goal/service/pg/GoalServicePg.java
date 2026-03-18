@@ -1,20 +1,20 @@
 package com.axis.goal.service.pg;
 
-import com.axis.common.exception.BusinessException;
+import com.axis.common.event.GoalDomainEvent;
+import com.axis.common.event.GoalEventType;
 import com.axis.common.exception.ResourceNotFoundException;
 import com.axis.common.security.SecurityUtils;
 import com.axis.goal.mapper.GoalMapper;
+import com.axis.goal.messaging.GoalEventPublisher;
 import com.axis.goal.model.dto.GoalRequest;
 import com.axis.goal.model.dto.GoalResponse;
 import com.axis.goal.model.dto.PageResponse;
-import com.axis.goal.model.entity.CustomFieldDefinition;
 import com.axis.goal.model.entity.Goal;
-import com.axis.goal.model.entity.Goal.GoalStatus;
-import com.axis.goal.model.entity.GoalType;
 import com.axis.goal.model.entity.Label;
-import com.axis.goal.repository.CustomFieldDefinitionRepository;
+import com.axis.goal.model.entity.LifeAspect;
+import com.axis.goal.model.enums.ProgressStatus;
 import com.axis.goal.repository.GoalRepository;
-import com.axis.goal.repository.GoalTypeRepository;
+import com.axis.goal.repository.LifeAspectRepository;
 import com.axis.goal.repository.LabelRepository;
 import com.axis.goal.service.GoalService;
 import io.quarkus.panache.common.Page;
@@ -22,9 +22,9 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
-import jakarta.ws.rs.core.Response;
 import lombok.extern.slf4j.Slf4j;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,10 +39,7 @@ public class GoalServicePg implements GoalService {
     GoalMapper goalMapper;
 
     @Inject
-    CustomFieldDefinitionRepository fieldDefinitionRepository;
-
-    @Inject
-    GoalTypeRepository goalTypeRepository;
+    LifeAspectRepository lifeAspectRepository;
 
     @Inject
     LabelRepository labelRepository;
@@ -50,25 +47,34 @@ public class GoalServicePg implements GoalService {
     @Inject
     SecurityUtils securityUtils;
 
+    @Inject
+    GoalEventPublisher goalEventPublisher;
+
     @Override
     @Transactional
     public GoalResponse create(GoalRequest request) {
         UUID userId = getCurrentUserId();
         log.debug("Creating new goal for user: {}", userId);
 
-        // Fetch and validate the GoalType
-        GoalType goalType = goalTypeRepository.findByIdAndUserId(request.typeId(), userId)
-                .orElseThrow(() -> new ResourceNotFoundException("GoalType", request.typeId()));
+        LifeAspect lifeAspect = lifeAspectRepository.findByIdAndUserId(request.lifeAspectId(), userId)
+                .orElseThrow(() -> new ResourceNotFoundException("LifeAspect", request.lifeAspectId()));
 
         Goal goal = goalMapper.toEntity(request);
         goal.setUserId(userId);
-        goal.setType(goalType);
+        goal.setLifeAspect(lifeAspect);
 
-        setupCustomFieldAnswers(goal);
         setupLabels(goal, request.labelIds(), userId);
 
         goalRepository.persist(goal);
         log.info("Created goal with id: {} for user: {}", goal.getId(), userId);
+
+        goalEventPublisher.publish(new GoalDomainEvent(
+            UUID.randomUUID(), GoalEventType.GOAL_CREATED, "GOAL",
+            goal.getId(), goal.getId(), goal.getUserId(),
+            goal.getLifeAspect() != null ? goal.getLifeAspect().getId().toString() : null,
+            null, goal.getStatus().name(), goal.getTitle(), goal.getDescription(),
+            null, Instant.now()
+        ));
 
         return goalMapper.toResponse(goal);
     }
@@ -82,8 +88,29 @@ public class GoalServicePg implements GoalService {
         Goal existingGoal = goalRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", id));
 
+        String previousStatus = existingGoal.getStatus() != null ? existingGoal.getStatus().name() : null;
+
         goalMapper.patchEntity(request, existingGoal);
         setupLabels(existingGoal, request.labelIds(), userId);
+
+        String newStatus = existingGoal.getStatus() != null ? existingGoal.getStatus().name() : null;
+        if (!java.util.Objects.equals(previousStatus, newStatus)) {
+            goalEventPublisher.publish(new GoalDomainEvent(
+                UUID.randomUUID(), GoalEventType.GOAL_STATUS_CHANGED, "GOAL",
+                existingGoal.getId(), existingGoal.getId(), existingGoal.getUserId(),
+                existingGoal.getLifeAspect() != null ? existingGoal.getLifeAspect().getId().toString() : null,
+                previousStatus, newStatus, existingGoal.getTitle(), existingGoal.getDescription(),
+                null, Instant.now()
+            ));
+        } else {
+            goalEventPublisher.publish(new GoalDomainEvent(
+                UUID.randomUUID(), GoalEventType.GOAL_UPDATED, "GOAL",
+                existingGoal.getId(), existingGoal.getId(), existingGoal.getUserId(),
+                existingGoal.getLifeAspect() != null ? existingGoal.getLifeAspect().getId().toString() : null,
+                null, newStatus, existingGoal.getTitle(), existingGoal.getDescription(),
+                null, Instant.now()
+            ));
+        }
 
         log.info("Goal patched: {} for user: {}", id, userId);
         return goalMapper.toResponse(existingGoal);
@@ -92,74 +119,52 @@ public class GoalServicePg implements GoalService {
     @Override
     public GoalResponse findById(UUID id) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding goal: {} for user: {}", id, userId);
-
         Goal goal = goalRepository.findByIdAndUserId(id, userId)
                 .orElseThrow(() -> new ResourceNotFoundException("Goal", id));
-
         return goalMapper.toResponse(goal);
     }
 
     @Override
     public PageResponse<GoalResponse> findAll(int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding all goals for user: {}", userId);
-
         Sort sort = createSort(sortBy, sortDirection);
         List<Goal> goals = goalRepository.findByUserId(userId, Page.of(page, size), sort);
-        long totalElements = goalRepository.countByUserId(userId);
-
-        List<GoalResponse> responses = goals.stream()
-                .map(goalMapper::toResponse)
-                .toList();
-
-        return PageResponse.of(responses, totalElements, page, size);
+        long total = goalRepository.countByUserId(userId);
+        return PageResponse.of(goals.stream().map(goalMapper::toResponse).toList(), total, page, size);
     }
 
     @Override
-    public PageResponse<GoalResponse> findByStatus(GoalStatus status, int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<GoalResponse> findByStatus(ProgressStatus status, int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding goals with status: {} for user: {}", status, userId);
-
         Sort sort = createSort(sortBy, sortDirection);
         List<Goal> goals = goalRepository.findByUserIdAndStatus(userId, status, Page.of(page, size), sort);
-        long totalElements = goalRepository.countByUserIdAndStatus(userId, status);
-
-        List<GoalResponse> responses = goals.stream()
-                .map(goalMapper::toResponse)
-                .toList();
-
-        return PageResponse.of(responses, totalElements, page, size);
+        long total = goalRepository.countByUserIdAndStatus(userId, status);
+        return PageResponse.of(goals.stream().map(goalMapper::toResponse).toList(), total, page, size);
     }
 
     @Override
-    public PageResponse<GoalResponse> findByTypeId(UUID typeId, int page, int size, String sortBy, String sortDirection) {
+    public PageResponse<GoalResponse> findByLifeAspectId(UUID lifeAspectId, int page, int size, String sortBy, String sortDirection) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding goals with type ID: {} for user: {}", typeId, userId);
-
         Sort sort = createSort(sortBy, sortDirection);
-        List<Goal> goals = goalRepository.findByUserIdAndTypeId(userId, typeId, Page.of(page, size), sort);
-        long totalElements = goalRepository.countByUserIdAndTypeId(userId, typeId);
-
-        List<GoalResponse> responses = goals.stream()
-                .map(goalMapper::toResponse)
-                .toList();
-
-        return PageResponse.of(responses, totalElements, page, size);
+        List<Goal> goals = goalRepository.findByUserIdAndLifeAspectId(userId, lifeAspectId, Page.of(page, size), sort);
+        long total = goalRepository.countByUserIdAndLifeAspectId(userId, lifeAspectId);
+        return PageResponse.of(goals.stream().map(goalMapper::toResponse).toList(), total, page, size);
     }
 
     @Override
     @Transactional
     public void delete(UUID id) {
         UUID userId = getCurrentUserId();
-        log.debug("Deleting goal: {} for user: {}", id, userId);
-
         if (!goalRepository.existsByIdAndUserId(id, userId)) {
             throw new ResourceNotFoundException("Goal", id);
         }
-
         goalRepository.deleteByIdAndUserId(id, userId);
         log.info("Deleted goal: {} for user: {}", id, userId);
+
+        goalEventPublisher.publish(new GoalDomainEvent(
+            UUID.randomUUID(), GoalEventType.GOAL_DELETED, "GOAL",
+            id, id, userId, null, null, null, null, null, null, Instant.now()
+        ));
     }
 
     private UUID getCurrentUserId() {
@@ -168,55 +173,17 @@ public class GoalServicePg implements GoalService {
     }
 
     private Sort createSort(String sortBy, String sortDirection) {
-        if (sortBy == null || sortBy.isEmpty()) {
-            sortBy = "createdAt";
-        }
+        if (sortBy == null || sortBy.isEmpty()) sortBy = "createdAt";
         Sort.Direction direction = "asc".equalsIgnoreCase(sortDirection)
-            ? Sort.Direction.Ascending
-            : Sort.Direction.Descending;
+                ? Sort.Direction.Ascending : Sort.Direction.Descending;
         return Sort.by(sortBy, direction);
     }
 
-    /**
-     * Resolves label IDs to Label entities and assigns them to the goal.
-     * If labelIds is null, labels are left unchanged (for PATCH semantics).
-     * If labelIds is empty, all labels are removed.
-     */
     private void setupLabels(Goal goal, List<UUID> labelIds, UUID userId) {
-        if (labelIds == null) {
-            return;
-        }
-        if (labelIds.isEmpty()) {
-            goal.getLabels().clear();
-            return;
-        }
+        if (labelIds == null) return;
+        if (labelIds.isEmpty()) { goal.getLabels().clear(); return; }
         List<Label> labels = labelRepository.findByIdsAndUserId(labelIds, userId);
         goal.getLabels().clear();
         goal.getLabels().addAll(labels);
-    }
-
-    /**
-     * Sets up bidirectional relationships for custom field answers and validates them.
-     * Similar to GoalTypeServicePg handling custom field definitions.
-     */
-    private void setupCustomFieldAnswers(Goal goal) {
-        if (goal.getCustomAnswers() != null && !goal.getCustomAnswers().isEmpty()) {
-            goal.getCustomAnswers().forEach(answer -> {
-                answer.setGoal(goal);
-
-                // Validate that field definition exists and belongs to the goal's type
-                CustomFieldDefinition definition = fieldDefinitionRepository.findByIdOptional(answer.getFieldDefinition().getId())
-                        .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", answer.getFieldDefinition().getId()));
-
-                if (!definition.getGoalType().getId().equals(goal.getType().getId())) {
-                    throw new BusinessException(
-                            "Custom field '" + definition.getLabel() + "' does not belong to goal type '" + goal.getType().getTitle() + "'",
-                            Response.Status.BAD_REQUEST
-                    );
-                }
-
-                answer.setFieldDefinition(definition);
-            });
-        }
     }
 }

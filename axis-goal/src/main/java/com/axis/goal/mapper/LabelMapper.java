@@ -16,12 +16,10 @@ public interface LabelMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "goals", ignore = true)
     Label toEntity(LabelRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "goals", ignore = true)
     @Mapping(target = "displayName", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "color", nullValuePropertyMappingStrategy = IGNORE)
     void patchEntity(LabelRequest request, @MappingTarget Label label);

@@ -1,0 +1,11 @@
+package com.axis.analytics;
+
+import io.quarkus.runtime.Quarkus;
+import io.quarkus.runtime.annotations.QuarkusMain;
+
+@QuarkusMain
+public class AnalyticsApplication {
+    public static void main(String... args) {
+        Quarkus.run(args);
+    }
+}

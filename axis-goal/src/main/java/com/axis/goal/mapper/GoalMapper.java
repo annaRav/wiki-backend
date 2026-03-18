@@ -9,61 +9,30 @@ import org.mapstruct.MappingTarget;
 
 import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 
-@Mapper(componentModel = "cdi", uses = {CustomFieldAnswerMapper.class, LabelMapper.class, ChecklistMapper.class})
+@Mapper(componentModel = "cdi", uses = {LabelMapper.class})
 public interface GoalMapper {
 
-    /**
-     * Convert Goal entity to GoalResponse DTO
-     */
-    @Mapping(target = "typeId", source = "type.id")
+    @Mapping(target = "lifeAspectId", source = "lifeAspect.id")
     GoalResponse toResponse(Goal goal);
 
-    /**
-     * Convert GoalRequest DTO to Goal entity
-     * Note: userId, type, and labels will be set separately by the service layer
-     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "type", ignore = true)
+    @Mapping(target = "lifeAspect", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
     @Mapping(target = "labels", ignore = true)
-    @Mapping(target = "checklists", ignore = true)
+
     Goal toEntity(GoalRequest request);
 
-    /**
-     * Update existing Goal entity from GoalRequest DTO
-     * Note: Preserves id, userId, type, createdAt, updatedAt
-     * parent, subGoals, and labels are managed through separate service logic
-     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "type", ignore = true)
+    @Mapping(target = "lifeAspect", ignore = true)
     @Mapping(target = "createdAt", ignore = true)
     @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "parent", ignore = true)
     @Mapping(target = "subGoals", ignore = true)
     @Mapping(target = "labels", ignore = true)
-    @Mapping(target = "checklists", ignore = true)
-    void updateEntity(GoalRequest request, @MappingTarget Goal goal);
 
-    /**
-     * Partially updates existing Goal entity from Request DTO (PATCH - partial update)
-     * Only non-null fields in the request will be updated
-     * Note: customAnswers and labels are ignored here - handled by the service layer
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "userId", ignore = true)
-    @Mapping(target = "type", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "parent", ignore = true)
-    @Mapping(target = "subGoals", ignore = true)
-    @Mapping(target = "customAnswers", ignore = true)
-    @Mapping(target = "labels", ignore = true)
-    @Mapping(target = "checklists", ignore = true)
     @Mapping(target = "title", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "description", nullValuePropertyMappingStrategy = IGNORE)
     @Mapping(target = "status", nullValuePropertyMappingStrategy = IGNORE)

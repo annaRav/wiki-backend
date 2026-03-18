@@ -6,8 +6,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -30,8 +28,4 @@ public class Label {
 
     @Column(name = "user_id", nullable = false)
     private UUID userId;
-
-    @ManyToMany(mappedBy = "labels")
-    @Builder.Default
-    private List<Goal> goals = new ArrayList<>();
 }

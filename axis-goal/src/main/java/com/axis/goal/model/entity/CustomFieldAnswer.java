@@ -24,10 +24,9 @@ public class CustomFieldAnswer {
     @JoinColumn(name = "field_definition_id", nullable = false)
     private CustomFieldDefinition fieldDefinition;
 
+    @Column(name = "owner_id", nullable = false)
+    private UUID ownerId;
+
     @Column(name = "field_value", columnDefinition = "TEXT")
     private String value;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_id", nullable = false)
-    private Goal goal;
 }

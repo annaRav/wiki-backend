@@ -1,6 +1,7 @@
 package com.axis.goal.model.entity;
 
 import com.axis.goal.model.enums.CustomFieldType;
+import com.axis.goal.model.enums.OwnerType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +34,10 @@ public class CustomFieldDefinition {
 
     private String placeholder;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_type_id", nullable = false)
-    private GoalType goalType;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "owner_type", nullable = false)
+    private OwnerType ownerType;
+
+    @Column(name = "user_id", nullable = false)
+    private UUID userId;
 }

@@ -8,10 +8,9 @@ import com.axis.goal.model.dto.CustomFieldAnswerRequest;
 import com.axis.goal.model.dto.CustomFieldAnswerResponse;
 import com.axis.goal.model.entity.CustomFieldAnswer;
 import com.axis.goal.model.entity.CustomFieldDefinition;
-import com.axis.goal.model.entity.Goal;
 import com.axis.goal.repository.CustomFieldAnswerRepository;
 import com.axis.goal.repository.CustomFieldDefinitionRepository;
-import com.axis.goal.repository.GoalRepository;
+import com.axis.goal.service.CustomFieldAnswerService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
@@ -23,16 +22,13 @@ import java.util.UUID;
 
 @Slf4j
 @ApplicationScoped
-public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomFieldAnswerService {
+public class CustomFieldAnswerServicePg implements CustomFieldAnswerService {
 
     @Inject
     CustomFieldAnswerRepository answerRepository;
 
     @Inject
     CustomFieldDefinitionRepository definitionRepository;
-
-    @Inject
-    GoalRepository goalRepository;
 
     @Inject
     CustomFieldAnswerMapper answerMapper;
@@ -42,35 +38,25 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
 
     @Override
     @Transactional
-    public CustomFieldAnswerResponse create(UUID goalId, CustomFieldAnswerRequest request) {
+    public CustomFieldAnswerResponse create(CustomFieldAnswerRequest request) {
         UUID userId = getCurrentUserId();
-        log.debug("Creating custom field answer for goal: {} by user: {}", goalId, userId);
+        UUID ownerId = request.ownerId();
+        log.debug("Creating custom field answer for owner: {} by user: {}", ownerId, userId);
 
-        // Verify goal exists and belongs to user
-        Goal goal = goalRepository.findByIdAndUserId(goalId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Goal", goalId));
-
-        // Verify field definition exists
         CustomFieldDefinition definition = definitionRepository.findByIdOptional(request.fieldDefinitionId())
                 .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", request.fieldDefinitionId()));
 
-        // Verify the field definition belongs to the goal's type
-        if (!definition.getGoalType().getId().equals(goal.getType().getId())) {
-            throw new BusinessException(
-                    "Custom field does not belong to this goal's type",
-                    Response.Status.BAD_REQUEST
-            );
+        if (!definition.getUserId().equals(userId)) {
+            throw new BusinessException("Custom field does not belong to your account", Response.Status.FORBIDDEN);
         }
 
-        // Check if answer already exists for this field and goal
-        if (answerRepository.existsByGoalIdAndFieldDefinitionId(goalId, request.fieldDefinitionId())) {
+        if (answerRepository.existsByOwnerIdAndFieldDefinitionId(ownerId, request.fieldDefinitionId())) {
             throw new BusinessException(
                     "Answer for this custom field already exists. Use update endpoint instead.",
                     Response.Status.CONFLICT
             );
         }
 
-        // Validate required fields
         if (definition.isRequired() && (request.value() == null || request.value().isBlank())) {
             throw new BusinessException(
                     "Value is required for field: " + definition.getLabel(),
@@ -79,11 +65,11 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
         }
 
         CustomFieldAnswer answer = answerMapper.toEntity(request);
-        answer.setGoal(goal);
+        answer.setOwnerId(ownerId);
         answer.setFieldDefinition(definition);
 
         answerRepository.persist(answer);
-        log.info("Created custom field answer with id: {} for goal: {}", answer.getId(), goalId);
+        log.info("Created custom field answer with id: {} for owner: {}", answer.getId(), ownerId);
 
         return answerMapper.toResponse(answer);
     }
@@ -94,15 +80,8 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
         UUID userId = getCurrentUserId();
         log.debug("Updating custom field answer: {} by user: {}", id, userId);
 
-        CustomFieldAnswer answer = answerRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldAnswer", id));
+        CustomFieldAnswer answer = findOwnedAnswer(id, userId);
 
-        // Verify goal belongs to user
-        if (!answer.getGoal().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to modify this answer", Response.Status.FORBIDDEN);
-        }
-
-        // Validate required fields
         if (answer.getFieldDefinition().isRequired() &&
                 (request.value() == null || request.value().isBlank())) {
             throw new BusinessException(
@@ -111,7 +90,6 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
             );
         }
 
-        // Update only the value (field definition should not change)
         answer.setValue(request.value());
 
         log.info("Updated custom field answer: {}", id);
@@ -124,15 +102,8 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
         UUID userId = getCurrentUserId();
         log.debug("Patching custom field answer: {} by user: {}", id, userId);
 
-        CustomFieldAnswer answer = answerRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldAnswer", id));
+        CustomFieldAnswer answer = findOwnedAnswer(id, userId);
 
-        // Verify goal belongs to user
-        if (!answer.getGoal().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to modify this answer", Response.Status.FORBIDDEN);
-        }
-
-        // Validate required fields only if value is being updated
         if (request.value() != null && answer.getFieldDefinition().isRequired() && request.value().isBlank()) {
             throw new BusinessException(
                     "Value cannot be empty for required field: " + answer.getFieldDefinition().getLabel(),
@@ -140,7 +111,6 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
             );
         }
 
-        // Use mapper for partial update (only non-null fields)
         answerMapper.patchEntity(request, answer);
 
         log.info("Patched custom field answer: {}", id);
@@ -152,27 +122,16 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
         UUID userId = getCurrentUserId();
         log.debug("Finding custom field answer: {} by user: {}", id, userId);
 
-        CustomFieldAnswer answer = answerRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldAnswer", id));
-
-        // Verify goal belongs to user
-        if (!answer.getGoal().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to view this answer", Response.Status.FORBIDDEN);
-        }
-
+        CustomFieldAnswer answer = findOwnedAnswer(id, userId);
         return answerMapper.toResponse(answer);
     }
 
     @Override
-    public List<CustomFieldAnswerResponse> findByGoalId(UUID goalId) {
+    public List<CustomFieldAnswerResponse> findByOwnerId(UUID ownerId) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding custom field answers for goal: {} by user: {}", goalId, userId);
+        log.debug("Finding custom field answers for owner: {} by user: {}", ownerId, userId);
 
-        // Verify goal exists and belongs to user
-        Goal goal = goalRepository.findByIdAndUserId(goalId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("Goal", goalId));
-
-        return answerRepository.findByGoalId(goalId)
+        return answerRepository.findByOwnerId(ownerId)
                 .stream()
                 .map(answerMapper::toResponse)
                 .toList();
@@ -184,15 +143,8 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
         UUID userId = getCurrentUserId();
         log.debug("Deleting custom field answer: {} by user: {}", id, userId);
 
-        CustomFieldAnswer answer = answerRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldAnswer", id));
+        CustomFieldAnswer answer = findOwnedAnswer(id, userId);
 
-        // Verify goal belongs to user
-        if (!answer.getGoal().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to delete this answer", Response.Status.FORBIDDEN);
-        }
-
-        // Check if field is required
         if (answer.getFieldDefinition().isRequired()) {
             throw new BusinessException(
                     "Cannot delete answer for required field: " + answer.getFieldDefinition().getLabel(),
@@ -202,6 +154,17 @@ public class CustomFieldAnswerServicePg implements com.axis.goal.service.CustomF
 
         answerRepository.delete(answer);
         log.info("Deleted custom field answer: {}", id);
+    }
+
+    private CustomFieldAnswer findOwnedAnswer(UUID id, UUID userId) {
+        CustomFieldAnswer answer = answerRepository.findByIdOptional(id)
+                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldAnswer", id));
+
+        if (!answer.getFieldDefinition().getUserId().equals(userId)) {
+            throw new BusinessException("You don't have permission to access this answer", Response.Status.FORBIDDEN);
+        }
+
+        return answer;
     }
 
     private UUID getCurrentUserId() {

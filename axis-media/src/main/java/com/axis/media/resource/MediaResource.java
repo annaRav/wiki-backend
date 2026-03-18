@@ -14,7 +14,6 @@ import org.eclipse.microprofile.openapi.annotations.parameters.Parameter;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponse;
 import org.eclipse.microprofile.openapi.annotations.responses.APIResponses;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
-import org.jboss.resteasy.reactive.MultipartForm;
 import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
@@ -56,7 +55,7 @@ public class MediaResource {
         @APIResponse(responseCode = "400", description = "Invalid request"),
         @APIResponse(responseCode = "401", description = "User not authenticated")
     })
-    public Response upload(@MultipartForm UploadForm form) {
+    public Response upload(UploadForm form) {
         UUID ownerId = getCurrentUserId();
         String originalFilename = form.filename != null ? form.filename : form.file.fileName();
         String mimeType = form.file.contentType() != null ? form.file.contentType() : MediaType.APPLICATION_OCTET_STREAM;

@@ -1,15 +1,15 @@
 package com.axis.goal.model.dto;
 
-import com.axis.goal.model.entity.Goal.GoalStatus;
-import jakarta.validation.Valid;
+import com.axis.goal.model.enums.ProgressStatus;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
 import java.util.UUID;
 
-@Schema(description = "Request DTO for creating or updating a goal. For PATCH requests, all fields are optional (only provided fields will be updated).")
+@Schema(description = "Request DTO for creating or updating a goal")
 public record GoalRequest(
 
     @Schema(description = "Title of the goal. Required for POST, optional for PATCH.")
@@ -17,22 +17,18 @@ public record GoalRequest(
     @Size(max = 255, message = "Title must not exceed 255 characters")
     String title,
 
-    @Schema(description = "Detailed description of the goal. Optional for both POST and PATCH.")
+    @Schema(description = "Detailed description of the goal.")
     @Size(max = 5000, message = "Description must not exceed 5000 characters")
     String description,
 
-    @Schema(description = "ID of the goal type. Required for POST, optional for PATCH.")
-    UUID typeId,
+    @Schema(description = "ID of the life aspect this goal belongs to. Required for POST.")
+    @NotNull(message = "Life aspect ID is required")
+    UUID lifeAspectId,
 
-    @Schema(description = "Current status of the goal. Required for POST, optional for PATCH.")
-    GoalStatus status,
+    @Schema(description = "Progress status of the goal.")
+    ProgressStatus status,
 
-    @Schema(description = "List of custom field answers for this goal. Optional.")
-    @Valid
-    List<CustomFieldAnswerRequest> customAnswers,
-
-    @Schema(description = "List of label IDs to attach to this goal. Optional.")
+    @Schema(description = "List of label IDs to attach to this goal.")
     List<UUID> labelIds
 
-) {
-}
+) {}

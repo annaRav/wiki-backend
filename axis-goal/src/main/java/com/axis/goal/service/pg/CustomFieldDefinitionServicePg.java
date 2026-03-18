@@ -6,12 +6,9 @@ import com.axis.common.security.SecurityUtils;
 import com.axis.goal.mapper.CustomFieldDefinitionMapper;
 import com.axis.goal.model.dto.CustomFieldDefinitionRequest;
 import com.axis.goal.model.dto.CustomFieldDefinitionResponse;
-import com.axis.goal.model.dto.GoalTypeRequest;
-import com.axis.goal.model.dto.GoalTypeResponse;
 import com.axis.goal.model.entity.CustomFieldDefinition;
-import com.axis.goal.model.entity.GoalType;
+import com.axis.goal.model.enums.OwnerType;
 import com.axis.goal.repository.CustomFieldDefinitionRepository;
-import com.axis.goal.repository.GoalTypeRepository;
 import com.axis.goal.service.CustomFieldDefinitionService;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
@@ -30,9 +27,6 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
     CustomFieldDefinitionRepository definitionRepository;
 
     @Inject
-    GoalTypeRepository goalTypeRepository;
-
-    @Inject
     CustomFieldDefinitionMapper definitionMapper;
 
     @Inject
@@ -40,19 +34,15 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
 
     @Override
     @Transactional
-    public CustomFieldDefinitionResponse create(UUID goalTypeId, CustomFieldDefinitionRequest request) {
+    public CustomFieldDefinitionResponse create(CustomFieldDefinitionRequest request) {
         UUID userId = getCurrentUserId();
-        log.debug("Creating custom field definition for goal type: {} by user: {}", goalTypeId, userId);
-
-        // Verify goal type exists and belongs to user
-        GoalType goalType = goalTypeRepository.findByIdAndUserId(goalTypeId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("GoalType", goalTypeId));
+        log.debug("Creating custom field definition for owner type: {} by user: {}", request.ownerType(), userId);
 
         CustomFieldDefinition definition = definitionMapper.toEntity(request);
-        definition.setGoalType(goalType);
+        definition.setUserId(userId);
 
         definitionRepository.persist(definition);
-        log.info("Created custom field definition with id: {} for goal type: {}", definition.getId(), goalTypeId);
+        log.info("Created custom field definition with id: {} for owner type: {}", definition.getId(), request.ownerType());
 
         return definitionMapper.toResponse(definition);
     }
@@ -63,14 +53,7 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
         UUID userId = getCurrentUserId();
         log.debug("Updating custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
-
-        // Verify goal type belongs to user
-        if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to modify this custom field", Response.Status.FORBIDDEN);
-        }
-
+        CustomFieldDefinition definition = findOwnedDefinition(id, userId);
         definitionMapper.updateEntity(request, definition);
 
         log.info("Updated custom field definition: {}", id);
@@ -83,17 +66,10 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
         UUID userId = getCurrentUserId();
         log.debug("Patching custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
+        CustomFieldDefinition definition = findOwnedDefinition(id, userId);
+        definitionMapper.patchEntity(request, definition);
 
-        // Verify goal type belongs to user
-        if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to modify this custom field", Response.Status.FORBIDDEN);
-        }
-
-        definitionMapper.updateEntity(request, definition);
-
-        log.info("Updated custom field definition: {}", id);
+        log.info("Patched custom field definition: {}", id);
         return definitionMapper.toResponse(definition);
     }
 
@@ -102,27 +78,16 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
         UUID userId = getCurrentUserId();
         log.debug("Finding custom field definition: {} by user: {}", id, userId);
 
-        CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
-                .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
-
-        // Verify goal type belongs to user
-        if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to view this custom field", Response.Status.FORBIDDEN);
-        }
-
+        CustomFieldDefinition definition = findOwnedDefinition(id, userId);
         return definitionMapper.toResponse(definition);
     }
 
     @Override
-    public List<CustomFieldDefinitionResponse> findByGoalTypeId(UUID goalTypeId) {
+    public List<CustomFieldDefinitionResponse> findByOwnerType(OwnerType ownerType) {
         UUID userId = getCurrentUserId();
-        log.debug("Finding custom field definitions for goal type: {} by user: {}", goalTypeId, userId);
+        log.debug("Finding custom field definitions for owner type: {} by user: {}", ownerType, userId);
 
-        // Verify goal type exists and belongs to user
-        GoalType goalType = goalTypeRepository.findByIdAndUserId(goalTypeId, userId)
-                .orElseThrow(() -> new ResourceNotFoundException("GoalType", goalTypeId));
-
-        return definitionRepository.findByGoalTypeId(goalTypeId)
+        return definitionRepository.findByOwnerTypeAndUserId(ownerType, userId)
                 .stream()
                 .map(definitionMapper::toResponse)
                 .toList();
@@ -134,16 +99,20 @@ public class CustomFieldDefinitionServicePg implements CustomFieldDefinitionServ
         UUID userId = getCurrentUserId();
         log.debug("Deleting custom field definition: {} by user: {}", id, userId);
 
+        CustomFieldDefinition definition = findOwnedDefinition(id, userId);
+        definitionRepository.delete(definition);
+        log.info("Deleted custom field definition: {}", id);
+    }
+
+    private CustomFieldDefinition findOwnedDefinition(UUID id, UUID userId) {
         CustomFieldDefinition definition = definitionRepository.findByIdOptional(id)
                 .orElseThrow(() -> new ResourceNotFoundException("CustomFieldDefinition", id));
 
-        // Verify goal type belongs to user
-        if (!definition.getGoalType().getUserId().equals(userId)) {
-            throw new BusinessException("You don't have permission to delete this custom field", Response.Status.FORBIDDEN);
+        if (!definition.getUserId().equals(userId)) {
+            throw new BusinessException("You don't have permission to access this custom field", Response.Status.FORBIDDEN);
         }
 
-        definitionRepository.delete(definition);
-        log.info("Deleted custom field definition: {}", id);
+        return definition;
     }
 
     private UUID getCurrentUserId() {

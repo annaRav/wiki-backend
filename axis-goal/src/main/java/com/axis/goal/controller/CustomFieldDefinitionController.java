@@ -2,6 +2,7 @@ package com.axis.goal.controller;
 
 import com.axis.goal.model.dto.CustomFieldDefinitionRequest;
 import com.axis.goal.model.dto.CustomFieldDefinitionResponse;
+import com.axis.goal.model.enums.OwnerType;
 import com.axis.goal.service.CustomFieldDefinitionService;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.inject.Inject;
@@ -20,124 +21,95 @@ import java.util.List;
 import java.util.UUID;
 
 @Slf4j
-@Path("/api/goal-types/{goalTypeId}/custom-fields")
+@Path("/api/custom-field-definitions")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
 @RunOnVirtualThread
-@Tag(name = "Custom Field Definitions", description = "API for managing custom field definitions for goal types")
+@Tag(name = "Custom Field Definitions", description = "API for managing custom field definitions per entity type")
 public class CustomFieldDefinitionController {
 
     @Inject
     CustomFieldDefinitionService definitionService;
 
-    @Operation(
-            summary = "Create a custom field definition",
-            description = "Creates a new custom field definition for a specific goal type"
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "201", description = "Custom field definition created successfully"),
-            @APIResponse(responseCode = "400", description = "Invalid request data"),
-            @APIResponse(responseCode = "401", description = "User not authenticated"),
-            @APIResponse(responseCode = "404", description = "Goal type not found"),
-            @APIResponse(responseCode = "409", description = "Custom field key already exists")
-    })
     @POST
-    public Response create(
-            @Parameter(description = "Goal Type ID") @PathParam("goalTypeId") UUID goalTypeId,
-            @Valid CustomFieldDefinitionRequest request) {
-        log.debug("Creating custom field definition for goal type: {}", goalTypeId);
-        CustomFieldDefinitionResponse response = definitionService.create(goalTypeId, request);
+    @Operation(summary = "Create a custom field definition",
+               description = "Creates a new custom field definition for the specified entity type (LIFE_ASPECT, GOAL, SUB_GOAL)")
+    @APIResponses({
+        @APIResponse(responseCode = "201", description = "Custom field definition created successfully"),
+        @APIResponse(responseCode = "400", description = "Invalid request data"),
+        @APIResponse(responseCode = "401", description = "User not authenticated")
+    })
+    public Response create(@Valid CustomFieldDefinitionRequest request) {
+        log.debug("Creating custom field definition for owner type: {}", request.ownerType());
+        CustomFieldDefinitionResponse response = definitionService.create(request);
         return Response.status(Response.Status.CREATED).entity(response).build();
     }
 
-    @Operation(
-            summary = "Update a custom field definition",
-            description = "Updates an existing custom field definition. Only the owner can update."
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Custom field definition updated successfully"),
-            @APIResponse(responseCode = "400", description = "Invalid request data"),
-            @APIResponse(responseCode = "401", description = "User not authenticated"),
-            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
-            @APIResponse(responseCode = "404", description = "Custom field definition not found"),
-    })
     @PUT
     @Path("/{id}")
+    @Operation(summary = "Update a custom field definition (full update)")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Custom field definition updated successfully"),
+        @APIResponse(responseCode = "403", description = "Access denied"),
+        @APIResponse(responseCode = "404", description = "Custom field definition not found")
+    })
     public CustomFieldDefinitionResponse update(
-            @Parameter(description = "Goal Type ID") @PathParam("goalTypeId") UUID goalTypeId,
-            @Parameter(description = "Custom Field Definition ID") @PathParam("id") UUID id,
+            @Parameter(description = "Definition ID") @PathParam("id") UUID id,
             @Valid CustomFieldDefinitionRequest request) {
         log.debug("Updating custom field definition: {}", id);
         return definitionService.update(id, request);
     }
 
-    @Operation(
-            summary = "Partially update goal",
-            description = "Updates only the provided fields (partial update - null fields are ignored)"
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Custom field definition successfully patched"),
-            @APIResponse(responseCode = "404", description = "Custom field definition not found")
-    })
     @PATCH
     @Path("/{id}")
+    @Operation(summary = "Partially update a custom field definition")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Custom field definition updated successfully"),
+        @APIResponse(responseCode = "403", description = "Access denied"),
+        @APIResponse(responseCode = "404", description = "Custom field definition not found")
+    })
     public CustomFieldDefinitionResponse patch(
-            @Parameter(description = "Custom field definition ID") @PathParam("id") UUID id,
-            @Valid CustomFieldDefinitionRequest request) {
+            @Parameter(description = "Definition ID") @PathParam("id") UUID id,
+            CustomFieldDefinitionRequest request) {
         log.debug("Patching custom field definition: {}", id);
         return definitionService.patch(id, request);
     }
 
-    @Operation(
-            summary = "Get custom field definition by ID",
-            description = "Retrieves a specific custom field definition. Only the owner can view."
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Custom field definition retrieved successfully"),
-            @APIResponse(responseCode = "401", description = "User not authenticated"),
-            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
-            @APIResponse(responseCode = "404", description = "Custom field definition not found")
-    })
     @GET
     @Path("/{id}")
+    @Operation(summary = "Get custom field definition by ID")
+    @APIResponses({
+        @APIResponse(responseCode = "200", description = "Custom field definition retrieved successfully"),
+        @APIResponse(responseCode = "403", description = "Access denied"),
+        @APIResponse(responseCode = "404", description = "Custom field definition not found")
+    })
     public CustomFieldDefinitionResponse findById(
-            @Parameter(description = "Goal Type ID") @PathParam("goalTypeId") UUID goalTypeId,
-            @Parameter(description = "Custom Field Definition ID") @PathParam("id") UUID id) {
+            @Parameter(description = "Definition ID") @PathParam("id") UUID id) {
         log.debug("Finding custom field definition: {}", id);
         return definitionService.findById(id);
     }
 
-    @Operation(
-            summary = "Get all custom field definitions for a goal type",
-            description = "Retrieves all custom field definitions for a specific goal type"
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "200", description = "Custom field definitions retrieved successfully"),
-            @APIResponse(responseCode = "401", description = "User not authenticated"),
-            @APIResponse(responseCode = "404", description = "Goal type not found")
-    })
     @GET
-    public List<CustomFieldDefinitionResponse> findByGoalTypeId(
-            @Parameter(description = "Goal Type ID") @PathParam("goalTypeId") UUID goalTypeId) {
-        log.debug("Finding custom field definitions for goal type: {}", goalTypeId);
-        return definitionService.findByGoalTypeId(goalTypeId);
+    @Operation(summary = "Get all custom field definitions by entity type",
+               description = "Retrieves all custom field definitions for a specific entity type (LIFE_ASPECT, GOAL, or SUB_GOAL)")
+    @APIResponse(responseCode = "200", description = "Custom field definitions retrieved successfully")
+    public List<CustomFieldDefinitionResponse> findByOwnerType(
+            @Parameter(description = "Owner type: LIFE_ASPECT, GOAL, or SUB_GOAL")
+            @QueryParam("ownerType") OwnerType ownerType) {
+        log.debug("Finding custom field definitions for owner type: {}", ownerType);
+        return definitionService.findByOwnerType(ownerType);
     }
 
-    @Operation(
-            summary = "Delete a custom field definition",
-            description = "Deletes a custom field definition. Only the owner can delete."
-    )
-    @APIResponses(value = {
-            @APIResponse(responseCode = "204", description = "Custom field definition deleted successfully"),
-            @APIResponse(responseCode = "401", description = "User not authenticated"),
-            @APIResponse(responseCode = "403", description = "User doesn't have permission"),
-            @APIResponse(responseCode = "404", description = "Custom field definition not found")
-    })
     @DELETE
     @Path("/{id}")
+    @Operation(summary = "Delete a custom field definition")
+    @APIResponses({
+        @APIResponse(responseCode = "204", description = "Custom field definition deleted successfully"),
+        @APIResponse(responseCode = "403", description = "Access denied"),
+        @APIResponse(responseCode = "404", description = "Custom field definition not found")
+    })
     public Response delete(
-            @Parameter(description = "Goal Type ID") @PathParam("goalTypeId") UUID goalTypeId,
-            @Parameter(description = "Custom Field Definition ID") @PathParam("id") UUID id) {
+            @Parameter(description = "Definition ID") @PathParam("id") UUID id) {
         log.debug("Deleting custom field definition: {}", id);
         definitionService.delete(id);
         return Response.noContent().build();

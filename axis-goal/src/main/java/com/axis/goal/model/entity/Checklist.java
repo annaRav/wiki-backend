@@ -1,5 +1,6 @@
 package com.axis.goal.model.entity;
 
+import com.axis.goal.model.enums.OwnerType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,9 +32,12 @@ public class Checklist {
     @Column(nullable = false)
     private int position;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "goal_id", nullable = false)
-    private Goal goal;
+    @Column(name = "owner_id", nullable = false)
+    private UUID ownerId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "owner_type", nullable = false, length = 20)
+    private OwnerType ownerType;
 
     @OneToMany(mappedBy = "checklist", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default

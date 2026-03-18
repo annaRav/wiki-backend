@@ -6,25 +6,16 @@ import io.quarkus.panache.common.Sort;
 import jakarta.enterprise.context.ApplicationScoped;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @ApplicationScoped
 public class ChecklistRepository implements PanacheRepositoryBase<Checklist, UUID> {
 
-    public List<Checklist> findByGoalId(UUID goalId) {
-        return find("goal.id", Sort.by("position"), goalId).list();
+    public List<Checklist> findByOwnerId(UUID ownerId) {
+        return find("ownerId", Sort.by("position"), ownerId).list();
     }
 
-    public Optional<Checklist> findByIdAndGoalId(UUID id, UUID goalId) {
-        return find("id = ?1 and goal.id = ?2", id, goalId).firstResultOptional();
-    }
-
-    public long countByGoalId(UUID goalId) {
-        return count("goal.id", goalId);
-    }
-
-    public boolean existsByIdAndGoalId(UUID id, UUID goalId) {
-        return count("id = ?1 and goal.id = ?2", id, goalId) > 0;
+    public long countByOwnerId(UUID ownerId) {
+        return count("ownerId", ownerId);
     }
 }

@@ -1,6 +1,6 @@
 package com.axis.goal.model.dto;
 
-import com.axis.goal.model.entity.Goal.GoalStatus;
+import com.axis.goal.model.enums.ProgressStatus;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.time.LocalDateTime;
@@ -19,11 +19,11 @@ public record GoalResponse(
     @Schema(description = "Detailed description of the goal")
     String description,
 
-    @Schema(description = "ID of the goal type")
-    UUID typeId,
+    @Schema(description = "ID of the life aspect this goal belongs to")
+    UUID lifeAspectId,
 
-    @Schema(description = "Current status of the goal")
-    GoalStatus status,
+    @Schema(description = "Progress status of the goal")
+    ProgressStatus status,
 
     @Schema(description = "ID of the user who owns this goal")
     UUID userId,
@@ -35,10 +35,6 @@ public record GoalResponse(
     LocalDateTime updatedAt,
 
     @Schema(description = "Labels attached to this goal")
-    List<LabelResponse> labels,
+    List<LabelResponse> labels
 
-    @Schema(description = "Checklists attached to this goal, ordered by position")
-    List<ChecklistResponse> checklists
-
-) {
-}
+) {}

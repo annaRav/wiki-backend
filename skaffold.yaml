@@ -24,6 +24,10 @@ build:
       context: .
       docker:
         dockerfile: axis-user/src/main/docker/Dockerfile.jvm
+    - image: axis/analytics
+      context: .
+      docker:
+        dockerfile: axis-analytics/src/main/docker/Dockerfile.jvm
   local:
     push: false
 
@@ -37,6 +41,7 @@ manifests:
     - k8s/axis-media.yaml
     - k8s/axis-notification.yaml
     - k8s/axis-user.yaml
+    - k8s/axis-analytics.yaml
 
 deploy:
   kubectl: {}

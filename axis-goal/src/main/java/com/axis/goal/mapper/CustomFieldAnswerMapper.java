@@ -12,41 +12,19 @@ import static org.mapstruct.NullValuePropertyMappingStrategy.IGNORE;
 @Mapper(componentModel = "cdi")
 public interface CustomFieldAnswerMapper {
 
-    /**
-     * Convert CustomFieldAnswer entity to CustomFieldAnswerResponse DTO
-     * Maps field definition properties to response for easy frontend access
-     */
     @Mapping(target = "fieldDefinitionId", source = "fieldDefinition.id")
     @Mapping(target = "fieldLabel", source = "fieldDefinition.label")
     @Mapping(target = "fieldType", source = "fieldDefinition.type")
     CustomFieldAnswerResponse toResponse(CustomFieldAnswer answer);
 
-    /**
-     * Convert CustomFieldAnswerRequest DTO to CustomFieldAnswer entity
-     * Note: fieldDefinition and goal will be set separately in the service layer
-     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fieldDefinition", ignore = true)
-    @Mapping(target = "goal", ignore = true)
+    @Mapping(target = "ownerId", ignore = true)
     CustomFieldAnswer toEntity(CustomFieldAnswerRequest request);
 
-    /**
-     * Update existing CustomFieldAnswer entity from CustomFieldAnswerRequest DTO (PUT - full update)
-     * Note: Preserves id, fieldDefinition, and goal
-     */
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "fieldDefinition", ignore = true)
-    @Mapping(target = "goal", ignore = true)
-    void updateEntity(CustomFieldAnswerRequest request, @MappingTarget CustomFieldAnswer answer);
-
-    /**
-     * Partially update existing CustomFieldAnswer entity from CustomFieldAnswerRequest DTO (PATCH - partial update)
-     * Only non-null fields in the request will be updated
-     * Note: Preserves id, fieldDefinition, and goal. fieldDefinitionId from request is not mapped.
-     */
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "fieldDefinition", ignore = true)
-    @Mapping(target = "goal", ignore = true)
+    @Mapping(target = "ownerId", ignore = true)
     @Mapping(target = "value", nullValuePropertyMappingStrategy = IGNORE)
     void patchEntity(CustomFieldAnswerRequest request, @MappingTarget CustomFieldAnswer answer);
 }
